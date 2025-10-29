@@ -55,6 +55,24 @@
                     <p id="file-name"></p>
                     <p id="file-type"></p>
                 </div>
+
+                <div class="sample-section">
+                    <h3>サンプルデータ</h3>
+                    <div class="sample-buttons">
+                        <button type="button" id="sample-geojson-btn" class="sample-btn">GeoJSONサンプル</button>
+                        <button type="button" id="sample-image-btn" class="sample-btn">画像サンプル</button>
+                    </div>
+                    
+                    <div class="sample-list" id="sample-geojson-list" style="display: none;">
+                        <h4>GeoJSONサンプル</h4>
+                        <div id="geojson-samples"></div>
+                    </div>
+                    
+                    <div class="sample-list" id="sample-image-list" style="display: none;">
+                        <h4>画像サンプル</h4>
+                        <div id="image-samples"></div>
+                    </div>
+                </div>
             </section>
 
             <section class="control-section">
@@ -110,6 +128,7 @@
     <script src="js/input-handler.js"></script>
     <script src="js/renderer.js"></script>
     <script src="js/ui-controls.js"></script>
+    <script src="js/sample-manager.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>

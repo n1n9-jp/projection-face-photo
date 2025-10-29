@@ -1,0 +1,65 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Large Circle"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [0, 0], [10, 0], [20, 0], [30, 0], [40, 0], [50, 0],
+          [50, 10], [50, 20], [50, 30], [50, 40], [50, 50],
+          [40, 50], [30, 50], [20, 50], [10, 50], [0, 50],
+          [0, 40], [0, 30], [0, 20], [0, 10], [0, 0]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Small Circle 1"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-50, -20], [-40, -20], [-40, -10], [-50, -10], [-50, -20]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Small Circle 2"  
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [60, -20], [70, -20], [70, -10], [60, -10], [60, -20]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Grid Lines"
+      },
+      "geometry": {
+        "type": "MultiLineString",
+        "coordinates": [
+          [[-180, -80], [180, -80]],
+          [[-180, -40], [180, -40]],
+          [[-180, 0], [180, 0]],
+          [[-180, 40], [180, 40]], 
+          [[-180, 80], [180, 80]],
+          [[-120, -90], [-120, 90]],
+          [[-60, -90], [-60, 90]],
+          [[0, -90], [0, 90]],
+          [[60, -90], [60, 90]],
+          [[120, -90], [120, 90]]
+        ]
+      }
+    }
+  ]
+}

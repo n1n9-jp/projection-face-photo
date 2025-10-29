@@ -1,0 +1,84 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Tissot Indicatrix - Center"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-5, 5], [5, 5], [5, -5], [-5, -5], [-5, 5]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Tissot Indicatrix - North"
+      },
+      "geometry": {
+        "type": "Polygon", 
+        "coordinates": [[
+          [-5, 65], [5, 65], [5, 55], [-5, 55], [-5, 65]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Tissot Indicatrix - South"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-5, -55], [5, -55], [5, -65], [-5, -65], [-5, -55]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Tissot Indicatrix - East"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [85, 5], [95, 5], [95, -5], [85, -5], [85, 5]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Tissot Indicatrix - West"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-95, 5], [-85, 5], [-85, -5], [-95, -5], [-95, 5]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Grid Pattern"
+      },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [[[30, 30], [40, 30], [40, 20], [30, 20], [30, 30]]],
+          [[[50, 30], [60, 30], [60, 20], [50, 20], [50, 30]]],
+          [[[30, 10], [40, 10], [40, 0], [30, 0], [30, 10]]],
+          [[[50, 10], [60, 10], [60, 0], [50, 0], [50, 10]]],
+          [[[-40, 30], [-30, 30], [-30, 20], [-40, 20], [-40, 30]]],
+          [[[-60, 30], [-50, 30], [-50, 20], [-60, 20], [-60, 30]]],
+          [[[-40, 10], [-30, 10], [-30, 0], [-40, 0], [-40, 10]]],
+          [[[-60, 10], [-50, 10], [-50, 0], [-60, 0], [-60, 10]]]
+        ]
+      }
+    }
+  ]
+}

@@ -4,6 +4,7 @@ class MapProjectionApp {
         this.renderer = new Renderer(this.projectionManager);
         this.inputHandler = new InputHandler();
         this.uiControls = new UIControls(this.projectionManager, this.renderer);
+        this.sampleManager = new SampleManager();
         
         this.isInitialized = false;
     }
@@ -15,6 +16,7 @@ class MapProjectionApp {
             this.renderer.initialize();
             this.inputHandler.initialize();
             this.uiControls.initialize();
+            this.setupSampleManager();
             
             this.setupEventHandlers();
             this.setupKeyboardShortcuts();
@@ -78,6 +80,96 @@ class MapProjectionApp {
                 this.clearData();
             }
         });
+    }
+
+    setupSampleManager() {
+        this.sampleManager.onSampleLoaded((data) => {
+            this.handleDataLoaded(data);
+        });
+
+        this.sampleManager.onError((error) => {
+            this.uiControls.showMessage('サンプル読み込みエラー: ' + error, 'error');
+        });
+
+        this.setupSampleUI();
+    }
+
+    setupSampleUI() {
+        const geoJsonBtn = document.getElementById('sample-geojson-btn');
+        const imageBtn = document.getElementById('sample-image-btn');
+        const geoJsonList = document.getElementById('sample-geojson-list');
+        const imageList = document.getElementById('sample-image-list');
+        const geoJsonContainer = document.getElementById('geojson-samples');
+        const imageContainer = document.getElementById('image-samples');
+
+        if (!geoJsonBtn || !imageBtn) {
+            console.error('Sample buttons not found in DOM');
+            return;
+        }
+
+        // ボタンのイベントリスナー
+        geoJsonBtn.addEventListener('click', () => {
+            this.toggleSampleList('geojson', geoJsonBtn, imageBtn, geoJsonList, imageList);
+        });
+
+        imageBtn.addEventListener('click', () => {
+            this.toggleSampleList('images', imageBtn, geoJsonBtn, imageList, geoJsonList);
+        });
+
+        // サンプルアイテムを生成
+        if (geoJsonContainer && imageContainer) {
+            this.populateSampleItems('geojson', geoJsonContainer);
+            this.populateSampleItems('images', imageContainer);
+        }
+    }
+
+    toggleSampleList(type, activeBtn, inactiveBtn, activeList, inactiveList) {
+        // ボタンの状態を切り替え
+        activeBtn.classList.add('active');
+        inactiveBtn.classList.remove('active');
+
+        // リストの表示を切り替え
+        if (activeList.style.display === 'none' || activeList.style.display === '') {
+            activeList.style.display = 'block';
+            inactiveList.style.display = 'none';
+        } else {
+            activeList.style.display = 'none';
+        }
+    }
+
+    populateSampleItems(type, container) {
+        const samples = this.sampleManager.getSamples(type);
+        container.innerHTML = '';
+
+        samples.forEach(sample => {
+            const item = document.createElement('div');
+            item.className = 'sample-item';
+            item.innerHTML = `
+                <div class="sample-item-name">${sample.name}</div>
+                <div class="sample-item-description">${sample.description}</div>
+            `;
+
+            item.addEventListener('click', () => {
+                this.loadSample(type, sample.filename);
+                // リストを閉じる
+                const list = container.parentElement;
+                list.style.display = 'none';
+                // ボタンの状態をリセット
+                document.querySelectorAll('.sample-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+            });
+
+            container.appendChild(item);
+        });
+    }
+
+    async loadSample(type, filename) {
+        try {
+            await this.sampleManager.loadSample(type, filename);
+        } catch (error) {
+            this.uiControls.showMessage('サンプル読み込みに失敗しました', 'error');
+        }
     }
 
     async handleDataLoaded(data) {
