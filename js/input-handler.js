@@ -75,7 +75,7 @@ class InputHandler {
         if (this.currentInputType === 'geojson') {
             text.textContent = 'GeoJSONファイルをドラッグ&ドロップ';
         } else {
-            text.textContent = '顔写真をドラッグ&ドロップ';
+            text.textContent = 'PNGかJPEGファイルをドラッグ&ドロップ';
         }
     }
 
