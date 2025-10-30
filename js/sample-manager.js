@@ -33,12 +33,6 @@ class SampleManager {
                     filename: 'lena.png', 
                     description: '画像処理の標準テスト画像',
                     path: 'samples/lena.png'
-                },
-                {
-                    name: 'テスト顔写真',
-                    filename: 'test_face.png',
-                    description: '投影変形テスト用の顔写真',
-                    path: 'samples/test_face.png'
                 }
                 // 他の画像サンプルは後で追加
             ]
