@@ -9,24 +9,6 @@ class SampleManager {
                     path: 'samples/face.geojson'
                 },
                 {
-                    name: '世界地図 (簡易版)',
-                    filename: 'world-simple.geojson',
-                    description: '大陸の簡略化された形状',
-                    path: 'samples/world-simple.geojson'
-                },
-                {
-                    name: '円と格子',
-                    filename: 'circles.geojson',
-                    description: '円形と格子線パターン',
-                    path: 'samples/circles.geojson'
-                },
-                {
-                    name: '日本列島',
-                    filename: 'japan.geojson',
-                    description: '日本の主要な島々',
-                    path: 'samples/japan.geojson'
-                },
-                {
                     name: '幾何学図形',
                     filename: 'geometric-shapes.geojson',
                     description: '三角形、五角形、星形など',
