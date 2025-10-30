@@ -9,6 +9,10 @@ class InputHandler {
             onError: null,
             onProgress: null
         };
+
+        // Webcam properties
+        this.webcamStream = null;
+        this.availableCameras = [];
     }
 
     initialize() {
@@ -307,6 +311,161 @@ class InputHandler {
             filename: 'sample.geojson'
         };
         this.triggerCallback('onDataLoaded', this.currentData);
+    }
+
+    // Webcam methods
+    async enumerateCameras(requestPermission = false) {
+        try {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+                throw new Error('お使いのブラウザはカメラアクセスに対応していません');
+            }
+
+            // 許可を取得するために一度getUserMediaを呼ぶ
+            if (requestPermission) {
+                try {
+                    const tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                    // すぐに停止
+                    tempStream.getTracks().forEach(track => track.stop());
+                } catch (permError) {
+                    console.warn('Permission denied:', permError);
+                    throw new Error('カメラへのアクセスが拒否されました');
+                }
+            }
+
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            this.availableCameras = devices.filter(device => device.kind === 'videoinput');
+
+            if (this.availableCameras.length === 0) {
+                throw new Error('カメラが見つかりませんでした');
+            }
+
+            this.populateCameraSelect();
+            return this.availableCameras;
+        } catch (error) {
+            console.error('Camera enumeration error:', error);
+            this.showError(error.message);
+            return [];
+        }
+    }
+
+    populateCameraSelect() {
+        const select = document.getElementById('camera-select');
+        if (!select) return;
+
+        select.innerHTML = '<option value="">カメラを選択...</option>';
+
+        this.availableCameras.forEach((camera, index) => {
+            const option = document.createElement('option');
+            option.value = camera.deviceId;
+            option.textContent = camera.label || `カメラ ${index + 1}`;
+            select.appendChild(option);
+        });
+
+        // 最初のカメラを自動選択
+        if (this.availableCameras.length > 0) {
+            select.value = this.availableCameras[0].deviceId;
+        }
+    }
+
+    async initializeWebcam(deviceId = null) {
+        try {
+            // 既存のストリームを停止
+            if (this.webcamStream) {
+                this.stopWebcam();
+            }
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error('お使いのブラウザはカメラアクセスに対応していません');
+            }
+
+            const constraints = {
+                video: deviceId ? { deviceId: { exact: deviceId } } : true,
+                audio: false
+            };
+
+            this.webcamStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+            const video = document.getElementById('webcam-video');
+            if (video) {
+                video.srcObject = this.webcamStream;
+            }
+
+            return this.webcamStream;
+        } catch (error) {
+            console.error('Webcam initialization error:', error);
+
+            let errorMessage = 'カメラの起動に失敗しました';
+            if (error.name === 'NotAllowedError') {
+                errorMessage = 'カメラへのアクセスが拒否されました。ブラウザの設定を確認してください';
+            } else if (error.name === 'NotFoundError') {
+                errorMessage = 'カメラが見つかりませんでした';
+            } else if (error.name === 'NotReadableError') {
+                errorMessage = 'カメラが他のアプリケーションで使用中です';
+            }
+
+            this.showError(errorMessage);
+            throw error;
+        }
+    }
+
+    captureFromWebcam() {
+        try {
+            const video = document.getElementById('webcam-video');
+            if (!video || !this.webcamStream) {
+                throw new Error('カメラが起動していません');
+            }
+
+            // Canvasを作成して現在のフレームをキャプチャ
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            const ctx = canvas.getContext('2d');
+
+            // 鏡像を元に戻す（transform: scaleX(-1)の反転）
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Canvasから画像を作成
+            const img = new Image();
+            img.onload = () => {
+                this.currentData = {
+                    type: 'image',
+                    data: img,
+                    filename: `webcam-capture-${Date.now()}.png`,
+                    width: img.width,
+                    height: img.height
+                };
+                this.triggerCallback('onDataLoaded', this.currentData);
+            };
+
+            img.onerror = () => {
+                this.showError('画像のキャプチャに失敗しました');
+            };
+
+            img.src = canvas.toDataURL('image/png');
+
+        } catch (error) {
+            console.error('Capture error:', error);
+            this.showError(error.message);
+        }
+    }
+
+    stopWebcam() {
+        if (this.webcamStream) {
+            this.webcamStream.getTracks().forEach(track => track.stop());
+            this.webcamStream = null;
+
+            const video = document.getElementById('webcam-video');
+            if (video) {
+                video.srcObject = null;
+            }
+        }
+    }
+
+    isWebcamActive() {
+        return this.webcamStream !== null;
     }
 }
 

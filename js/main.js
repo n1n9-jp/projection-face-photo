@@ -17,8 +17,9 @@ class MapProjectionApp {
             this.inputHandler.initialize();
             this.uiControls.initialize();
             this.setupSampleManager();
-            
+
             this.setupEventHandlers();
+            this.setupWebcamEventListeners();
             this.setupKeyboardShortcuts();
             this.loadSampleDataIfNeeded();
             
@@ -50,6 +51,11 @@ class MapProjectionApp {
         });
 
         window.addEventListener('beforeunload', (event) => {
+            // カメラを停止
+            if (this.inputHandler.isWebcamActive()) {
+                this.inputHandler.stopWebcam();
+            }
+
             if (this.renderer.isRendering) {
                 event.preventDefault();
                 event.returnValue = '描画処理中です。ページを離れますか？';
@@ -80,6 +86,103 @@ class MapProjectionApp {
                 this.clearData();
             }
         });
+    }
+
+    setupWebcamEventListeners() {
+        const startCameraBtn = document.getElementById('start-camera-btn');
+        const stopCameraBtn = document.getElementById('stop-camera-btn');
+        const captureBtn = document.getElementById('capture-btn');
+        const cameraSelect = document.getElementById('camera-select');
+
+        if (startCameraBtn) {
+            startCameraBtn.addEventListener('click', () => {
+                this.startWebcam();
+            });
+        }
+
+        if (stopCameraBtn) {
+            stopCameraBtn.addEventListener('click', () => {
+                this.stopWebcam();
+            });
+        }
+
+        if (captureBtn) {
+            captureBtn.addEventListener('click', () => {
+                this.captureFromWebcam();
+            });
+        }
+
+        if (cameraSelect) {
+            cameraSelect.addEventListener('change', (event) => {
+                // カメラが既に起動している場合は、新しいカメラで再起動
+                if (this.inputHandler.isWebcamActive()) {
+                    this.startWebcam();
+                }
+            });
+        }
+    }
+
+    async startWebcam() {
+        try {
+            const cameraSelect = document.getElementById('camera-select');
+            const cameraSelectGroup = document.getElementById('camera-select-group');
+            const deviceId = cameraSelect ? cameraSelect.value : null;
+
+            // カメラを起動（deviceIdがあればそれを使用、なければデフォルト）
+            await this.inputHandler.initializeWebcam(deviceId || null);
+
+            // カメラ一覧を取得（許可後なのでラベルが取得できる）
+            const cameras = await this.inputHandler.enumerateCameras(false);
+
+            // UI更新
+            const webcamPreview = document.getElementById('webcam-preview');
+            const startCameraBtn = document.getElementById('start-camera-btn');
+
+            if (webcamPreview) {
+                webcamPreview.style.display = 'block';
+            }
+
+            if (startCameraBtn) {
+                startCameraBtn.textContent = 'カメラを再起動';
+            }
+
+            // カメラが複数ある場合は選択UIを表示
+            if (cameras.length > 1 && cameraSelectGroup) {
+                cameraSelectGroup.style.display = 'block';
+            }
+
+            this.uiControls.showMessage('カメラを起動しました', 'info');
+        } catch (error) {
+            console.error('Failed to start webcam:', error);
+        }
+    }
+
+    stopWebcam() {
+        this.inputHandler.stopWebcam();
+
+        // UI更新
+        const webcamPreview = document.getElementById('webcam-preview');
+        const startCameraBtn = document.getElementById('start-camera-btn');
+        const cameraSelectGroup = document.getElementById('camera-select-group');
+
+        if (webcamPreview) {
+            webcamPreview.style.display = 'none';
+        }
+
+        if (startCameraBtn) {
+            startCameraBtn.textContent = 'カメラを起動';
+        }
+
+        if (cameraSelectGroup) {
+            cameraSelectGroup.style.display = 'none';
+        }
+
+        this.uiControls.showMessage('カメラを停止しました', 'info');
+    }
+
+    captureFromWebcam() {
+        this.inputHandler.captureFromWebcam();
+        this.uiControls.showMessage('写真を撮りました', 'info');
     }
 
     setupSampleManager() {
@@ -121,13 +224,29 @@ class MapProjectionApp {
     handleInputTypeChange(inputType) {
         const geoJsonList = document.getElementById('sample-geojson-list');
         const imageList = document.getElementById('sample-image-list');
+        const fileInputArea = document.getElementById('file-input-area');
+        const webcamArea = document.getElementById('webcam-area');
+
+        // すべてを非表示にしてから必要なものを表示
+        geoJsonList.style.display = 'none';
+        imageList.style.display = 'none';
+        fileInputArea.style.display = 'none';
+        webcamArea.style.display = 'none';
 
         if (inputType === 'geojson') {
             geoJsonList.style.display = 'block';
-            imageList.style.display = 'none';
+            fileInputArea.style.display = 'block';
         } else if (inputType === 'image') {
             imageList.style.display = 'block';
-            geoJsonList.style.display = 'none';
+            fileInputArea.style.display = 'block';
+        } else if (inputType === 'webcam') {
+            webcamArea.style.display = 'block';
+            // カメラを停止（別の入力タイプから切り替えた場合）
+            if (this.inputHandler.isWebcamActive()) {
+                this.stopWebcam();
+            }
+        } else {
+            fileInputArea.style.display = 'block';
         }
     }
 
@@ -296,16 +415,21 @@ class MapProjectionApp {
     }
 
     clearData() {
+        // Webカムを停止
+        if (this.inputHandler.isWebcamActive()) {
+            this.stopWebcam();
+        }
+
         this.inputHandler.clearData();
         this.renderer.clear();
         this.uiControls.disableControls();
         this.clearSampleSelection();
-        
+
         const dataInfoDiv = document.getElementById('data-info');
         if (dataInfoDiv) {
             dataInfoDiv.remove();
         }
-        
+
         this.uiControls.showMessage('データをクリアしました', 'info');
     }
 

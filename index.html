@@ -37,6 +37,10 @@
                         PNG, JPEG
                     </label>
                     <label>
+                        <input type="radio" name="input-type" value="webcam">
+                        Webカム
+                    </label>
+                    <label>
                         <input type="radio" name="input-type" value="geojson">
                         GeoJSON
                     </label>
@@ -54,6 +58,31 @@
                 <div class="file-info" id="file-info" style="display: none;">
                     <p id="file-name"></p>
                     <p id="file-type"></p>
+                </div>
+
+                <div class="webcam-area" id="webcam-area" style="display: none;">
+                    <div class="webcam-controls">
+                        <button id="start-camera-btn" class="webcam-btn primary">カメラを起動</button>
+
+                        <div class="camera-select-group" id="camera-select-group" style="display: none;">
+                            <label for="camera-select">カメラを切替:</label>
+                            <select id="camera-select">
+                                <option value="">カメラを選択...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="webcam-preview" id="webcam-preview" style="display: none;">
+                        <video id="webcam-video" autoplay playsinline></video>
+                        <div class="webcam-actions">
+                            <button id="capture-btn" class="webcam-btn success">写真を撮る</button>
+                            <button id="stop-camera-btn" class="webcam-btn secondary">停止</button>
+                        </div>
+                    </div>
+
+                    <div class="webcam-message" id="webcam-message" style="display: none;">
+                        <p id="webcam-message-text"></p>
+                    </div>
                 </div>
 
                 <div class="sample-section">
