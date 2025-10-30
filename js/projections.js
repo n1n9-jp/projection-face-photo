@@ -48,7 +48,7 @@ class ProjectionManager {
                 name: '心射図法',
                 description: '地球の中心から投影面に投影。直線が大圏航路を表す。',
                 properties: '透視図法（航海用）',
-                create: () => d3.geoGnomonic().clipAngle(90)
+                create: () => d3.geoGnomonic().clipAngle(60)
             },
             naturalEarth1: {
                 name: 'ナチュラルアース図法',

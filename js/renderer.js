@@ -11,6 +11,12 @@ class Renderer {
         this.previousProjection = null;
         this.transitionDuration = 500;
         this.showGraticule = true;
+        this.geoGroup = null;
+        this.dataGroup = null;
+        this.spherePath = null;
+        this.graticulePath = null;
+        this.graticuleOutlinePath = null;
+        this.geoGraticule = d3.geoGraticule();
     }
 
     initialize() {
@@ -25,6 +31,26 @@ class Renderer {
             .style('background', '#f8f9fa');
 
         this.svg.selectAll('*').remove();
+
+        this.geoGroup = this.svg.append('g')
+            .attr('class', 'geo-layer');
+
+        this.spherePath = this.geoGroup.append('path')
+            .attr('class', 'sphere')
+            .datum({type: 'Sphere'});
+
+        this.graticulePath = this.geoGroup.append('path')
+            .attr('class', 'graticule')
+            .datum(this.geoGraticule());
+
+        this.graticuleOutlinePath = this.geoGroup.append('path')
+            .attr('class', 'graticule-outline')
+            .datum(this.geoGraticule.outline());
+
+        this.dataGroup = this.geoGroup.append('g')
+            .attr('class', 'geo-data');
+
+        this.updateGraticuleVisibility();
     }
 
     setupCanvas() {
@@ -68,35 +94,44 @@ class Renderer {
     }
 
     renderGeoJSONDirect(geoData, projection) {
+        if (!this.geoGroup) {
+            this.setupSVG();
+        }
+
+        const shouldAnimate = this.shouldAnimate();
+        const transition = shouldAnimate ? this.createGeoTransition() : null;
         const path = d3.geoPath().projection(projection);
 
-        this.svg.selectAll('*').remove();
-        const g = this.svg.append('g');
+        this.updateSinglePath(this.spherePath, {type: 'Sphere'}, path, transition);
 
-        g.append('path')
-            .datum({type: 'Sphere'})
-            .attr('class', 'sphere')
-            .attr('d', path);
+        this.updateSinglePath(this.graticulePath, this.geoGraticule(), path, transition);
+        this.updateSinglePath(this.graticuleOutlinePath, this.geoGraticule.outline(), path, transition);
 
-        if (this.showGraticule) {
-            const graticule = d3.geoGraticule();
-            g.append('path')
-                .datum(graticule())
-                .attr('class', 'graticule');
-            g.append('path')
-                .datum(graticule.outline)
-                .attr('class', 'graticule-outline');
+        const features = this.extractGeoFeatures(geoData);
+        const keyFn = (feature, index) => feature.id || feature.properties?.id || feature.properties?.name || index;
+        const selection = this.dataGroup.selectAll('path.country')
+            .data(features, keyFn);
+
+        const exiting = selection.exit();
+        if (transition) {
+            exiting.transition(transition)
+                .style('opacity', 0)
+                .remove();
+        } else {
+            exiting.remove();
         }
 
-        if (geoData) {
-            g.selectAll('.country')
-                .data(geoData.features)
-                .enter().append('path')
-                .attr('class', 'country');
-        }
-        
-        // Apply path data after all elements are created
-        this.svg.selectAll('path').attr('d', path);
+        const entering = selection.enter()
+            .append('path')
+            .attr('class', 'country')
+            .attr('d', d => path(d));
+
+        const merged = entering.merge(selection);
+        this.applyPathTransition(merged, path, transition);
+
+        this.updateGraticuleVisibility();
+
+        this.previousProjection = projection;
     }
 
     async updateProjection() {
@@ -242,6 +277,67 @@ class Renderer {
         };
     }
 
+    applyPathTransition(selection, pathGenerator, transition) {
+        if (transition) {
+            selection.transition(transition)
+                .attrTween('d', function(d) {
+                    const previous = d3.select(this).attr('d');
+                    const current = pathGenerator(d);
+                    if (!previous || previous === current) {
+                        return () => current;
+                    }
+                    const interpolator = d3.interpolateString(previous, current);
+                    return (t) => interpolator(t);
+                });
+        } else {
+            selection.attr('d', d => pathGenerator(d));
+        }
+    }
+
+    updateSinglePath(selection, datum, pathGenerator, transition) {
+        if (!selection) return;
+        selection.datum(datum);
+        this.applyPathTransition(selection, pathGenerator, transition);
+    }
+
+    extractGeoFeatures(geoData) {
+        if (!geoData) {
+            return [];
+        }
+
+        if (geoData.type === 'FeatureCollection') {
+            return geoData.features || [];
+        }
+
+        if (geoData.type === 'Feature') {
+            return [geoData];
+        }
+
+        return [{
+            type: 'Feature',
+            geometry: geoData
+        }];
+    }
+
+    shouldAnimate() {
+        return Boolean(this.previousProjection) && this.transitionDuration > 0;
+    }
+
+    createGeoTransition() {
+        return this.svg.transition()
+            .duration(this.transitionDuration)
+            .ease(d3.easeCubicInOut);
+    }
+
+    updateGraticuleVisibility() {
+        if (this.graticulePath) {
+            this.graticulePath.style('display', this.showGraticule ? null : 'none');
+        }
+        if (this.graticuleOutlinePath) {
+            this.graticuleOutlinePath.style('display', this.showGraticule ? null : 'none');
+        }
+    }
+
     showSVG() {
         this.svg.style('display', 'block');
         this.canvas.style.display = 'none';
@@ -279,7 +375,8 @@ class Renderer {
     }
 
     clear() {
-        this.svg.selectAll('*').remove();
+        this.previousProjection = null;
+        this.setupSVG();
         this.ctx.clearRect(0, 0, this.width, this.height);
         this.ctx.fillStyle = '#f8f9fa';
         this.ctx.fillRect(0, 0, this.width, this.height);
@@ -307,11 +404,16 @@ class Renderer {
 
     setGraticuleVisibility(visible) {
         this.showGraticule = visible;
+        this.updateGraticuleVisibility();
+
         if (this.currentData) {
-            if (this.currentData.type === 'geojson') {
-                this.renderGeoJSONDirect(this.currentData.data, this.projectionManager.getCurrentProjection());
-            } else if (this.currentData.type === 'image') {
-                this.renderImageDirect(this.currentData.data, this.projectionManager.getCurrentProjection());
+            if (this.currentData.type === 'image') {
+                const projection = this.projectionManager.configureProjection(
+                    this.projectionManager.getCurrentProjection(),
+                    this.width,
+                    this.height
+                );
+                this.renderImageDirect(this.currentData.data, projection);
             }
         }
     }
