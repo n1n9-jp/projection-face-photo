@@ -1,9 +1,9 @@
 class MapProjectionApp {
     constructor() {
+        this.languageManager = new LanguageManager();
         this.projectionManager = new ProjectionManager();
         this.renderer = new Renderer(this.projectionManager);
         this.inputHandler = new InputHandler(this.languageManager);
-        this.languageManager = new LanguageManager();
         this.uiControls = new UIControls(this.projectionManager, this.renderer, this.languageManager);
         this.sampleManager = new SampleManager(this.languageManager);
         
