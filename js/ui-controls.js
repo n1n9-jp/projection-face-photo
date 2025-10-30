@@ -28,13 +28,28 @@ class UIControls {
         const projections = this.projectionManager.getAvailableProjections();
         
         selector.innerHTML = '';
-        
+
+        const groups = {};
         projections.forEach(proj => {
-            const option = document.createElement('option');
-            option.value = proj.key;
-            option.textContent = proj.name;
-            selector.appendChild(option);
+            if (!groups[proj.properties]) {
+                groups[proj.properties] = [];
+            }
+            groups[proj.properties].push(proj);
         });
+
+        for (const groupName in groups) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = groupName;
+            
+            groups[groupName].forEach(proj => {
+                const option = document.createElement('option');
+                option.value = proj.key;
+                option.textContent = proj.name;
+                optgroup.appendChild(option);
+            });
+            
+            selector.appendChild(optgroup);
+        }
 
         selector.value = this.projectionManager.currentProjection;
     }

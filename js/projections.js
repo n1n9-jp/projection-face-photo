@@ -104,7 +104,8 @@ class ProjectionManager {
     getAvailableProjections() {
         return Object.keys(this.projections).map(key => ({
             key,
-            name: this.projections[key].name
+            name: this.projections[key].name,
+            properties: this.projections[key].properties
         }));
     }
 
