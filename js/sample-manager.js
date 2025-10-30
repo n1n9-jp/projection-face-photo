@@ -29,7 +29,7 @@ class SampleManager {
                     path: 'samples/self.png'
                 },
                 {
-                    name: 'Lena',
+                    name: 'レナ',
                     filename: 'lena.png', 
                     description: '画像処理の標準テスト画像',
                     path: 'samples/lena.png'
