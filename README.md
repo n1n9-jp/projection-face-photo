@@ -5,7 +5,13 @@
 ## 概要
 
 このプロジェクトは、さまざまな地図投影法がデータに与える歪みを可視化するWebアプリケーションです。
-[n1n9-jp/projection-face](https://github.com/n1n9-jp/projection-face)を参考に、より柔軟な入力形式と豊富な投影法に対応します。
+参考サイトを踏まえつつ、より柔軟な入力形式と豊富な投影法に対応します。
+
+### 参考
+- https://github.com/n1n9-jp/projection-face
+- https://gist.github.com/awoodruff/9216081
+
+
 
 ## 機能
 
