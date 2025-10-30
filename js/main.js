@@ -115,7 +115,7 @@ class MapProjectionApp {
         });
 
         // 初期状態を設定
-        this.handleInputTypeChange('geojson');
+        this.handleInputTypeChange('image');
     }
 
     handleInputTypeChange(inputType) {
@@ -144,10 +144,28 @@ class MapProjectionApp {
             `;
 
             item.addEventListener('click', () => {
+                this.selectSampleItem(item);
                 this.loadSample(type, sample.filename);
             });
 
             container.appendChild(item);
+        });
+    }
+
+    selectSampleItem(selectedItem) {
+        // すべてのサンプルアイテムから選択状態を削除
+        document.querySelectorAll('.sample-item').forEach(item => {
+            item.classList.remove('selected');
+        });
+        
+        // 選択されたアイテムに選択状態を追加
+        selectedItem.classList.add('selected');
+    }
+
+    clearSampleSelection() {
+        // すべてのサンプルアイテムから選択状態を削除
+        document.querySelectorAll('.sample-item').forEach(item => {
+            item.classList.remove('selected');
         });
     }
 
@@ -162,6 +180,11 @@ class MapProjectionApp {
     async handleDataLoaded(data) {
         try {
             console.log('Data loaded:', data.type, data.filename);
+            
+            // サンプルからの読み込みでない場合は選択状態をクリア
+            if (!data.isSample) {
+                this.clearSampleSelection();
+            }
             
             this.uiControls.enableControls();
             this.uiControls.updateUIForDataType(data.type);
@@ -276,6 +299,7 @@ class MapProjectionApp {
         this.inputHandler.clearData();
         this.renderer.clear();
         this.uiControls.disableControls();
+        this.clearSampleSelection();
         
         const dataInfoDiv = document.getElementById('data-info');
         if (dataInfoDiv) {

@@ -243,6 +243,22 @@ body {
     transform: translateY(-1px);
 }
 
+.sample-item.selected {
+    background: #667eea;
+    border-color: #667eea;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.sample-item.selected .sample-item-name {
+    color: white;
+}
+
+.sample-item.selected .sample-item-description {
+    color: rgba(255, 255, 255, 0.9);
+}
+
 .sample-item-name {
     font-weight: 500;
     font-size: 0.85rem;
