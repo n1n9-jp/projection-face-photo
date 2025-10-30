@@ -18,7 +18,7 @@ class ProjectionManager {
                 name: 'ステレオ図法',
                 description: '角度を保持する方位図法。中心からの距離が大きくなると歪みが増加。',
                 properties: '正角図法（角度保持）',
-                create: () => d3.geoStereographic()
+                create: () => d3.geoStereographic().clipAngle(90)
             },
             equalEarth: {
                 name: 'イコールアース図法',
@@ -48,7 +48,7 @@ class ProjectionManager {
                 name: '心射図法',
                 description: '地球の中心から投影面に投影。直線が大圏航路を表す。',
                 properties: '透視図法（航海用）',
-                create: () => d3.geoGnomonic()
+                create: () => d3.geoGnomonic().clipAngle(90)
             },
             naturalEarth1: {
                 name: 'ナチュラルアース図法',

@@ -125,22 +125,14 @@ class Renderer {
             g.append('path')
                 .datum(graticule.outline)
                 .attr('class', 'graticule-outline')
-                .attr('d', path)
-                .attr('fill', 'none')
-                .attr('stroke', '#333')
-                .attr('stroke-width', '2px')
-                .attr('stroke-opacity', '0.8');
+                .attr('d', path);
             
             // graticuleのlines()メソッドで経緯線を個別に描画
             g.selectAll('.graticule-line')
                 .data(lines)
                 .enter().append('path')
                 .attr('class', 'graticule-line')
-                .attr('d', path)
-                .attr('fill', 'none')
-                .attr('stroke', '#666')
-                .attr('stroke-width', '1px')
-                .attr('stroke-opacity', '0.7');
+                .attr('d', path);
         }
     }
 
@@ -598,7 +590,7 @@ class Renderer {
         // 投影法の境界線（outline）を描画
         this.ctx.beginPath();
         path(graticule.outline());
-        this.ctx.strokeStyle = '#333';
+        this.ctx.strokeStyle = '#fff';
         this.ctx.lineWidth = 2;
         this.ctx.globalAlpha = 0.8;
         this.ctx.stroke();
@@ -607,7 +599,7 @@ class Renderer {
         // Canvas上に経緯線を描画
         this.ctx.beginPath();
         path(graticule());
-        this.ctx.strokeStyle = '#666';
+        this.ctx.strokeStyle = '#fff';
         this.ctx.lineWidth = 1;
         this.ctx.globalAlpha = 0.7;
         this.ctx.stroke();
