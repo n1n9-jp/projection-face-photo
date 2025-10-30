@@ -9,7 +9,8 @@ class Renderer {
         this.currentData = null;
         this.isRendering = false;
         this.previousProjection = null;
-        this.transitionDuration = 750;
+        this.transitionDuration = 500;
+        this.showGraticule = true;
     }
 
     initialize() {
@@ -91,12 +92,7 @@ class Renderer {
             .attr('class', 'sphere')
             .attr('xlink:href', '#sphere');
 
-        const graticule = d3.geoGraticule();
-        g.append('path')
-            .datum(graticule)
-            .attr('class', 'graticule')
-            .attr('d', path);
-
+        // Render GeoJSON features first (background)
         if (geoData.type === 'FeatureCollection') {
             g.selectAll('.feature')
                 .data(geoData.features)
@@ -118,46 +114,103 @@ class Renderer {
                 .attr('class', 'country')
                 .attr('d', path);
         }
+
+        // Render graticule (SVG用の実装)
+        if (this.showGraticule) {
+            // D3のgeoGraticuleを正しく使用
+            const graticule = d3.geoGraticule();
+            const lines = graticule.lines();
+            
+            // 投影法の境界線（outline）を描画
+            g.append('path')
+                .datum(graticule.outline)
+                .attr('class', 'graticule-outline')
+                .attr('d', path)
+                .attr('fill', 'none')
+                .attr('stroke', '#333')
+                .attr('stroke-width', '2px')
+                .attr('stroke-opacity', '0.8');
+            
+            // graticuleのlines()メソッドで経緯線を個別に描画
+            g.selectAll('.graticule-line')
+                .data(lines)
+                .enter().append('path')
+                .attr('class', 'graticule-line')
+                .attr('d', path)
+                .attr('fill', 'none')
+                .attr('stroke', '#666')
+                .attr('stroke-width', '1px')
+                .attr('stroke-opacity', '0.7');
+        }
     }
 
     renderGeoJSONWithTransition(geoData, targetProjection) {
-        const previousPath = d3.geoPath().projection(this.previousProjection);
-        const targetPath = d3.geoPath().projection(targetProjection);
+        if (!this.previousProjection) {
+            this.renderGeoJSONDirect(geoData, targetProjection);
+            return;
+        }
 
-        const graticule = d3.geoGraticule();
+        try {
+            // 安定したパス補間による実装
+            const previousPath = d3.geoPath().projection(this.previousProjection);
+            const targetPath = d3.geoPath().projection(targetProjection);
 
-        this.svg.selectAll('.sphere, .graticule, .country')
-            .transition()
-            .duration(this.transitionDuration)
-            .ease(d3.easeQuadInOut)
-            .attrTween('d', (d) => this.pathTween(previousPath, targetPath, d));
+            // 存在する要素のみ選択してトランジション
+            const elements = this.svg.selectAll('.sphere, .graticule, .graticule-line, .graticule-outline, .country')
+                .filter(function() {
+                    // 既にd属性を持つ要素のみトランジション対象
+                    return d3.select(this).attr('d') !== null;
+                });
+
+            const transition = elements
+                .transition()
+                .duration(this.transitionDuration)
+                .ease(d3.easeQuadInOut)
+                .attrTween('d', (d) => this.pathTween(previousPath, targetPath, d));
+                
+            // トランジション終了時に最終状態を確実に設定
+            transition.on('end', () => {
+                this.renderGeoJSONDirect(geoData, targetProjection);
+            });
+            
+        } catch (error) {
+            console.warn('Transition failed, falling back to direct render:', error);
+            this.renderGeoJSONDirect(geoData, targetProjection);
+        }
     }
 
     pathTween(previousPath, targetPath, datum) {
         return (t) => {
-            const p1 = previousPath(datum);
-            const p2 = targetPath(datum);
-            
-            if (!p1 || !p2) return null;
-            
-            const interpolated = d3.interpolateString(p1, p2);
-            return interpolated(t);
+            try {
+                const p1 = previousPath(datum);
+                const p2 = targetPath(datum);
+                
+                // 有効なパスかチェック
+                if (!p1 || !p2 || 
+                    p1.includes('Infinity') || p1.includes('NaN') || 
+                    p2.includes('Infinity') || p2.includes('NaN')) {
+                    // nullの代わりに終了状態のパスを返す
+                    return p2 || p1 || '';
+                }
+                
+                const interpolated = d3.interpolateString(p1, p2);
+                const result = interpolated(t);
+                
+                // 結果も有効かチェック
+                if (!result || result.includes('Infinity') || result.includes('NaN')) {
+                    // 無効な結果の場合、tの値に応じて適切なパスを返す
+                    return t > 0.5 ? p2 : p1;
+                }
+                
+                return result;
+            } catch (error) {
+                console.warn('Path interpolation error:', error);
+                // エラー時は終了状態のパスを返す
+                return targetPath(datum) || previousPath(datum) || '';
+            }
         };
     }
 
-    interpolateProjections(proj1, proj2, t) {
-        return (coordinates) => {
-            const p1 = proj1(coordinates);
-            const p2 = proj2(coordinates);
-            
-            if (!p1 || !p2) return null;
-            
-            return [
-                p1[0] * (1 - t) + p2[0] * t,
-                p1[1] * (1 - t) + p2[1] * t
-            ];
-        };
-    }
 
     async renderImage(imageElement, useTransition = false) {
         const projection = this.projectionManager.getCurrentProjection();
@@ -192,6 +245,11 @@ class Renderer {
         );
 
         this.ctx.putImageData(outputImageData, 0, 0);
+        
+        // 画像の上にgraticuleを描画
+        if (this.showGraticule) {
+            this.drawGraticuleOnCanvas(projection);
+        }
     }
 
     async renderImageWithTransition(imageElement, targetProjection) {
@@ -529,6 +587,55 @@ class Renderer {
         this.ctx.clearRect(0, 0, this.width, this.height);
         this.ctx.fillStyle = '#f8f9fa';
         this.ctx.fillRect(0, 0, this.width, this.height);
+    }
+
+    drawGraticuleOnCanvas(projection) {
+        console.log('Drawing graticule on canvas...');
+        
+        const graticule = d3.geoGraticule();
+        const path = d3.geoPath().projection(projection).context(this.ctx);
+        
+        // 投影法の境界線（outline）を描画
+        this.ctx.beginPath();
+        path(graticule.outline());
+        this.ctx.strokeStyle = '#333';
+        this.ctx.lineWidth = 2;
+        this.ctx.globalAlpha = 0.8;
+        this.ctx.stroke();
+        this.ctx.globalAlpha = 1.0;
+        
+        // Canvas上に経緯線を描画
+        this.ctx.beginPath();
+        path(graticule());
+        this.ctx.strokeStyle = '#666';
+        this.ctx.lineWidth = 1;
+        this.ctx.globalAlpha = 0.7;
+        this.ctx.stroke();
+        this.ctx.globalAlpha = 1.0;
+        
+        console.log('Graticule drawn on canvas');
+    }
+
+    setGraticuleVisibility(visible) {
+        this.showGraticule = visible;
+        if (this.currentData) {
+            if (this.currentData.type === 'geojson') {
+                this.renderGeoJSONDirect(this.currentData.data, 
+                    this.projectionManager.configureProjection(
+                        this.projectionManager.getCurrentProjection(), 
+                        this.width, this.height
+                    )
+                );
+            } else if (this.currentData.type === 'image') {
+                // 画像の場合は再描画
+                this.renderImageDirect(this.currentData.data, 
+                    this.projectionManager.configureProjection(
+                        this.projectionManager.getCurrentProjection(), 
+                        this.width, this.height
+                    )
+                );
+            }
+        }
     }
 
     exportImage() {
