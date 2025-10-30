@@ -135,10 +135,13 @@ class Renderer {
     }
 
     async updateProjection() {
-        if (this.currentData && this.currentData.type === 'geojson') {
-            await this.renderGeoJSON(this.currentData.data);
+        if (this.currentData) {
+            if (this.currentData.type === 'geojson') {
+                await this.renderGeoJSON(this.currentData.data);
+            } else if (this.currentData.type === 'image') {
+                await this.renderImage(this.currentData.data);
+            }
         }
-        // Note: Image projection updates would go here if needed.
     }
 
 
@@ -186,7 +189,14 @@ class Renderer {
         let processedPixels = 0;
 
         if (!projection.invert) {
-            // Forward transformation if invert is not supported
+            // Show warning and fill with background color if invert is not supported
+            console.warn('Current projection does not support image transformation');
+            for (let i = 0; i < outputImageData.data.length; i += 4) {
+                outputImageData.data[i] = 248;     // R
+                outputImageData.data[i + 1] = 249; // G  
+                outputImageData.data[i + 2] = 250; // B
+                outputImageData.data[i + 3] = 255; // A
+            }
             return;
         }
 
