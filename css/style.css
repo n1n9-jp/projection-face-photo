@@ -370,6 +370,11 @@ body {
     .sidebar {
         width: 100%;
         position: static;
+        order: 2;
+    }
+
+    .canvas-container {
+        order: 1;
     }
     
     .canvas-wrapper {
