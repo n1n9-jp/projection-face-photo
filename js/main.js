@@ -95,45 +95,39 @@ class MapProjectionApp {
     }
 
     setupSampleUI() {
-        const geoJsonBtn = document.getElementById('sample-geojson-btn');
-        const imageBtn = document.getElementById('sample-image-btn');
         const geoJsonList = document.getElementById('sample-geojson-list');
         const imageList = document.getElementById('sample-image-list');
         const geoJsonContainer = document.getElementById('geojson-samples');
         const imageContainer = document.getElementById('image-samples');
-
-        if (!geoJsonBtn || !imageBtn) {
-            console.error('Sample buttons not found in DOM');
-            return;
-        }
-
-        // ボタンのイベントリスナー
-        geoJsonBtn.addEventListener('click', () => {
-            this.toggleSampleList('geojson', geoJsonBtn, imageBtn, geoJsonList, imageList);
-        });
-
-        imageBtn.addEventListener('click', () => {
-            this.toggleSampleList('images', imageBtn, geoJsonBtn, imageList, geoJsonList);
-        });
+        const inputTypeRadios = document.querySelectorAll('input[name="input-type"]');
 
         // サンプルアイテムを生成
         if (geoJsonContainer && imageContainer) {
             this.populateSampleItems('geojson', geoJsonContainer);
             this.populateSampleItems('images', imageContainer);
         }
+
+        // ラジオボタンのイベントリスナー
+        inputTypeRadios.forEach(radio => {
+            radio.addEventListener('change', (event) => {
+                this.handleInputTypeChange(event.target.value);
+            });
+        });
+
+        // 初期状態を設定
+        this.handleInputTypeChange('geojson');
     }
 
-    toggleSampleList(type, activeBtn, inactiveBtn, activeList, inactiveList) {
-        // ボタンの状態を切り替え
-        activeBtn.classList.add('active');
-        inactiveBtn.classList.remove('active');
+    handleInputTypeChange(inputType) {
+        const geoJsonList = document.getElementById('sample-geojson-list');
+        const imageList = document.getElementById('sample-image-list');
 
-        // リストの表示を切り替え
-        if (activeList.style.display === 'none' || activeList.style.display === '') {
-            activeList.style.display = 'block';
-            inactiveList.style.display = 'none';
-        } else {
-            activeList.style.display = 'none';
+        if (inputType === 'geojson') {
+            geoJsonList.style.display = 'block';
+            imageList.style.display = 'none';
+        } else if (inputType === 'image') {
+            imageList.style.display = 'block';
+            geoJsonList.style.display = 'none';
         }
     }
 
@@ -151,13 +145,6 @@ class MapProjectionApp {
 
             item.addEventListener('click', () => {
                 this.loadSample(type, sample.filename);
-                // リストを閉じる
-                const list = container.parentElement;
-                list.style.display = 'none';
-                // ボタンの状態をリセット
-                document.querySelectorAll('.sample-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                });
             });
 
             container.appendChild(item);
