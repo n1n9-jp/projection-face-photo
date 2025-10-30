@@ -28,17 +28,26 @@ body {
     font-weight: 600;
 }
 
-.projection-selector {
+.header-controls {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.projection-selector,
+.language-selector {
     display: flex;
     align-items: center;
     gap: 0.5rem;
 }
 
-.projection-selector label {
+.projection-selector label,
+.language-selector label {
     font-weight: 500;
 }
 
-.projection-selector select {
+.projection-selector select,
+.language-selector select {
     padding: 0.5rem 1rem;
     border: none;
     border-radius: 5px;

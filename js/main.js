@@ -2,9 +2,10 @@ class MapProjectionApp {
     constructor() {
         this.projectionManager = new ProjectionManager();
         this.renderer = new Renderer(this.projectionManager);
-        this.inputHandler = new InputHandler();
-        this.uiControls = new UIControls(this.projectionManager, this.renderer);
-        this.sampleManager = new SampleManager();
+        this.inputHandler = new InputHandler(this.languageManager);
+        this.languageManager = new LanguageManager();
+        this.uiControls = new UIControls(this.projectionManager, this.renderer, this.languageManager);
+        this.sampleManager = new SampleManager(this.languageManager);
         
         this.isInitialized = false;
     }
@@ -13,12 +14,15 @@ class MapProjectionApp {
         try {
             console.log('Initializing Map Projection App...');
             
+            this.languageManager.initialize();
             this.renderer.initialize();
             this.inputHandler.initialize();
             this.uiControls.initialize();
             this.setupSampleManager();
 
             this.setupEventHandlers();
+            this.setupLanguageSwitcher();
+            this.updateAllUIText();
             this.setupWebcamEventListeners();
             this.setupKeyboardShortcuts();
             this.loadSampleDataIfNeeded();
@@ -31,6 +35,35 @@ class MapProjectionApp {
             console.error('Initialization error:', error);
             this.showError('アプリケーションの初期化に失敗しました: ' + error.message);
         }
+    }
+
+    setupLanguageSwitcher() {
+        const languageSelect = document.getElementById('language-select');
+        if (languageSelect) {
+            languageSelect.value = this.languageManager.getCurrentLanguage();
+            languageSelect.addEventListener('change', (event) => {
+                this.languageManager.setLanguage(event.target.value);
+            });
+
+            this.languageManager.onLanguageChange(() => {
+                this.updateAllUIText();
+            });
+        }
+    }
+
+    updateAllUIText() {
+        document.querySelectorAll('[data-i18n]').forEach(element => {
+            const key = element.dataset.i18n;
+            const translation = this.languageManager.t(key);
+            if (typeof translation === 'string') {
+                element.innerHTML = translation;
+            }
+        });
+        
+        // Update dynamic content
+        this.uiControls.populateProjectionOptions();
+        this.uiControls.updateProjectionInfo();
+        this.setupSampleUI();
     }
 
     setupEventHandlers() {

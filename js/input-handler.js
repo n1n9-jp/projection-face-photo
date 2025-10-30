@@ -1,5 +1,6 @@
 class InputHandler {
-    constructor() {
+    constructor(languageManager) {
+        this.languageManager = languageManager;
         this.currentInputType = 'geojson';
         this.currentData = null;
         this.supportedImageTypes = ['image/png', 'image/jpeg', 'image/jpg'];
@@ -75,11 +76,9 @@ class InputHandler {
 
     updateDropZoneText() {
         const dropZone = document.getElementById('drop-zone');
-        const text = dropZone.querySelector('p');
-        if (this.currentInputType === 'geojson') {
-            text.textContent = 'GeoJSONファイルをドラッグ&ドロップ';
-        } else {
-            text.textContent = 'PNGかJPEGファイルをドラッグ&ドロップ';
+        const text = dropZone.querySelector('p[data-i18n="inputSection.dropZone.drag"]');
+        if (text) {
+            text.textContent = this.languageManager.t('inputSection.dropZone.drag');
         }
     }
 
@@ -87,7 +86,7 @@ class InputHandler {
         if (!file) return;
 
         if (!this.validateFile(file)) {
-            this.showError('サポートされていないファイル形式です');
+            this.showError(this.languageManager.t('messages.unsupportedFileType'));
             return;
         }
 
@@ -126,12 +125,12 @@ class InputHandler {
                 this.hideProgress();
                 this.triggerCallback('onDataLoaded', this.currentData);
             } catch (error) {
-                this.showError('GeoJSONファイルの解析に失敗しました: ' + error.message);
+                this.showError(`${this.languageManager.t('messages.jsonParseError')}: ${error.message}`);
             }
         };
 
         reader.onerror = () => {
-            this.showError('ファイルの読み込みに失敗しました');
+            this.showError(this.languageManager.t('messages.fileReadError'));
         };
 
         reader.onprogress = (event) => {
@@ -163,14 +162,14 @@ class InputHandler {
             };
 
             img.onerror = () => {
-                this.showError('画像の読み込みに失敗しました');
+                this.showError(this.languageManager.t('messages.imageLoadError'));
             };
 
             img.src = event.target.result;
         };
 
         reader.onerror = () => {
-            this.showError('ファイルの読み込みに失敗しました');
+            this.showError(this.languageManager.t('messages.fileReadError'));
         };
 
         reader.onprogress = (event) => {
@@ -185,22 +184,22 @@ class InputHandler {
 
     validateGeoJSON(data) {
         if (!data || typeof data !== 'object') {
-            throw new Error('有効なJSONではありません');
+            throw new Error(this.languageManager.t('messages.invalidJson'));
         }
 
         if (data.type !== 'FeatureCollection' && data.type !== 'Feature') {
-            throw new Error('GeoJSONのtype属性が必要です');
+            throw new Error(this.languageManager.t('messages.invalidGeoJsonType'));
         }
 
         if (data.type === 'FeatureCollection') {
             if (!Array.isArray(data.features)) {
-                throw new Error('FeatureCollectionにはfeatures配列が必要です');
+                throw new Error(this.languageManager.t('messages.missingFeatures'));
             }
         }
 
         if (data.type === 'Feature') {
             if (!data.geometry) {
-                throw new Error('Featureにはgeometry属性が必要です');
+                throw new Error(this.languageManager.t('messages.missingGeometry'));
             }
         }
     }
@@ -317,7 +316,7 @@ class InputHandler {
     async enumerateCameras(requestPermission = false) {
         try {
             if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
-                throw new Error('お使いのブラウザはカメラアクセスに対応していません');
+                throw new Error(this.languageManager.t('messages.cameraUnsupported'));
             }
 
             // 許可を取得するために一度getUserMediaを呼ぶ
@@ -328,7 +327,7 @@ class InputHandler {
                     tempStream.getTracks().forEach(track => track.stop());
                 } catch (permError) {
                     console.warn('Permission denied:', permError);
-                    throw new Error('カメラへのアクセスが拒否されました');
+                    throw new Error(this.languageManager.t('messages.permissionDenied'));
                 }
             }
 
@@ -336,7 +335,7 @@ class InputHandler {
             this.availableCameras = devices.filter(device => device.kind === 'videoinput');
 
             if (this.availableCameras.length === 0) {
-                throw new Error('カメラが見つかりませんでした');
+                throw new Error(this.languageManager.t('messages.cameraNotFound'));
             }
 
             this.populateCameraSelect();
@@ -352,12 +351,12 @@ class InputHandler {
         const select = document.getElementById('camera-select');
         if (!select) return;
 
-        select.innerHTML = '<option value="">カメラを選択...</option>';
+        select.innerHTML = `<option value="">${this.languageManager.t('messages.selectCamera')}</option>`;
 
         this.availableCameras.forEach((camera, index) => {
             const option = document.createElement('option');
             option.value = camera.deviceId;
-            option.textContent = camera.label || `カメラ ${index + 1}`;
+            option.textContent = camera.label || `${this.languageManager.t('inputSection.webcam.selectCamera')} ${index + 1}`;
             select.appendChild(option);
         });
 
@@ -375,7 +374,7 @@ class InputHandler {
             }
 
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                throw new Error('お使いのブラウザはカメラアクセスに対応していません');
+                throw new Error(this.languageManager.t('messages.cameraUnsupported'));
             }
 
             const constraints = {
@@ -394,13 +393,13 @@ class InputHandler {
         } catch (error) {
             console.error('Webcam initialization error:', error);
 
-            let errorMessage = 'カメラの起動に失敗しました';
+            let errorMessage = this.languageManager.t('messages.cameraError');
             if (error.name === 'NotAllowedError') {
-                errorMessage = 'カメラへのアクセスが拒否されました。ブラウザの設定を確認してください';
+                errorMessage = this.languageManager.t('messages.permissionDenied');
             } else if (error.name === 'NotFoundError') {
-                errorMessage = 'カメラが見つかりませんでした';
+                errorMessage = this.languageManager.t('messages.cameraNotFound');
             } else if (error.name === 'NotReadableError') {
-                errorMessage = 'カメラが他のアプリケーションで使用中です';
+                errorMessage = this.languageManager.t('messages.cameraInUse');
             }
 
             this.showError(errorMessage);
@@ -412,7 +411,7 @@ class InputHandler {
         try {
             const video = document.getElementById('webcam-video');
             if (!video || !this.webcamStream) {
-                throw new Error('カメラが起動していません');
+                throw new Error(this.languageManager.t('messages.cameraNotStarted'));
             }
 
             // Canvasを作成して現在のフレームをキャプチャ
@@ -441,7 +440,7 @@ class InputHandler {
             };
 
             img.onerror = () => {
-                this.showError('画像のキャプチャに失敗しました');
+                this.showError(this.languageManager.t('messages.captureError'));
             };
 
             img.src = canvas.toDataURL('image/png');

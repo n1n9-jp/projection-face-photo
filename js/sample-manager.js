@@ -1,40 +1,35 @@
 class SampleManager {
-    constructor() {
+    constructor(languageManager) {
+        this.languageManager = languageManager;
         this.samples = {
             geojson: [
                 {
-                    name: '顔 (Face)',
                     filename: 'face.geojson',
-                    description: '人の顔を模したGeoJSONデータ',
-                    path: 'samples/face.geojson'
+                    path: 'samples/face.geojson',
+                    key: 'face'
                 },
                 {
-                    name: '幾何学図形',
                     filename: 'geometric-shapes.geojson',
-                    description: '三角形、五角形、星形など',
-                    path: 'samples/geometric-shapes.geojson'
+                    path: 'samples/geometric-shapes.geojson',
+                    key: 'geometric'
                 },
                 {
-                    name: 'ティソの示円',
                     filename: 'tissot-circles.geojson',
-                    description: '投影法の歪みを確認する円形パターン',
-                    path: 'samples/tissot-circles.geojson'
+                    path: 'samples/tissot-circles.geojson',
+                    key: 'tissot'
                 }
             ],
             images: [
                 {
-                    name: '自撮り写真',
                     filename: 'self.png',
-                    description: '顔写真のサンプル',
-                    path: 'samples/self.png'
+                    path: 'samples/self.png',
+                    key: 'self'
                 },
                 {
-                    name: 'レナ',
                     filename: 'lena.png', 
-                    description: '画像処理の標準テスト画像',
-                    path: 'samples/lena.png'
+                    path: 'samples/lena.png',
+                    key: 'lena'
                 }
-                // 他の画像サンプルは後で追加
             ]
         };
         
@@ -45,10 +40,22 @@ class SampleManager {
     }
 
     getSamples(type = null) {
-        if (type) {
-            return this.samples[type] || [];
+        const sampleTypes = type ? [type] : Object.keys(this.samples);
+        const result = {};
+
+        for (const sampleType of sampleTypes) {
+            result[sampleType] = this.samples[sampleType].map(sample => {
+                const name = this.languageManager.t(`sampleData.${sampleType}.${sample.key}.name`);
+                const description = this.languageManager.t(`sampleData.${sampleType}.${sample.key}.description`);
+                return {
+                    ...sample,
+                    name,
+                    description
+                };
+            });
         }
-        return this.samples;
+
+        return type ? result[type] : result;
     }
 
     async loadSample(type, filename) {
@@ -84,8 +91,8 @@ class SampleManager {
             type: 'geojson',
             data: geoData,
             filename: sample.filename,
-            name: sample.name,
-            description: sample.description,
+            name: this.languageManager.t(`sampleData.geojson.${sample.key}.name`),
+            description: this.languageManager.t(`sampleData.geojson.${sample.key}.description`),
             isSample: true
         };
 
@@ -101,8 +108,8 @@ class SampleManager {
                     type: 'image',
                     data: img,
                     filename: sample.filename,
-                    name: sample.name,
-                    description: sample.description,
+                    name: this.languageManager.t(`sampleData.images.${sample.key}.name`),
+                    description: this.languageManager.t(`sampleData.images.${sample.key}.description`),
                     width: img.width,
                     height: img.height,
                     isSample: true

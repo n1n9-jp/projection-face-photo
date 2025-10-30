@@ -1,7 +1,8 @@
 class UIControls {
-    constructor(projectionManager, renderer) {
+    constructor(projectionManager, renderer, languageManager) {
         this.projectionManager = projectionManager;
         this.renderer = renderer;
+        this.languageManager = languageManager;
         this.isUpdating = false;
         this.debounceTimeout = null;
     }
@@ -31,10 +32,11 @@ class UIControls {
 
         const groups = {};
         projections.forEach(proj => {
-            if (!groups[proj.properties]) {
-                groups[proj.properties] = [];
+            const groupName = this.languageManager.t(`projections.${proj.key}.properties`);
+            if (!groups[groupName]) {
+                groups[groupName] = [];
             }
-            groups[proj.properties].push(proj);
+            groups[groupName].push(proj);
         });
 
         for (const groupName in groups) {
@@ -44,7 +46,7 @@ class UIControls {
             groups[groupName].forEach(proj => {
                 const option = document.createElement('option');
                 option.value = proj.key;
-                option.textContent = proj.name;
+                option.textContent = this.languageManager.t(`projections.${proj.key}.name`);
                 optgroup.appendChild(option);
             });
             
@@ -112,11 +114,11 @@ class UIControls {
         
         infoElement.innerHTML = `
             <div class="projection-details">
-                <h3 id="projection-name">投影法を選択してください</h3>
+                <h3 id="projection-name">${this.languageManager.t('infoSection.selectPrompt')}</h3>
                 <p id="projection-description"></p>
                 <p id="projection-properties"></p>
                 <div class="projection-characteristics" id="projection-characteristics" style="display: none;">
-                    <h4>特徴:</h4>
+                    <h4>${this.languageManager.t('infoSection.characteristics')}</h4>
                     <ul id="characteristics-list"></ul>
                 </div>
             </div>
@@ -133,19 +135,19 @@ class UIControls {
         const characteristicsList = document.getElementById('characteristics-list');
 
         if (info) {
-            nameElement.textContent = info.name;
-            descriptionElement.textContent = info.description;
+            nameElement.textContent = this.languageManager.t(`projections.${this.projectionManager.currentProjection}.name`);
+            descriptionElement.textContent = this.languageManager.t(`projections.${this.projectionManager.currentProjection}.description`);
             
             const supportsInvert = this.projectionManager.supportsInvert();
-            const invertStatus = supportsInvert ? '✓ 画像変形対応' : '✗ GeoJSONのみ対応';
+            const invertStatus = supportsInvert ? this.languageManager.t('infoSection.imageSupported') : this.languageManager.t('infoSection.imageNotSupported');
             
             propertiesElement.innerHTML = `
-                <strong>分類:</strong> ${info.properties}<br>
-                <strong>画像変形:</strong> ${invertStatus}
+                <strong>${this.languageManager.t('infoSection.classification')}</strong> ${this.languageManager.t(`projections.${this.projectionManager.currentProjection}.properties`)}<br>
+                <strong>${this.languageManager.t('infoSection.imageSupport')}</strong> ${invertStatus}
             `;
             
-            const characteristics = this.getProjectionCharacteristics(this.projectionManager.currentProjection);
-            if (characteristics.length > 0) {
+            const characteristics = this.languageManager.t(`projections.${this.projectionManager.currentProjection}.characteristics`);
+            if (Array.isArray(characteristics) && characteristics.length > 0) {
                 characteristicsList.innerHTML = characteristics
                     .map(char => `<li>${char}</li>`)
                     .join('');
@@ -154,7 +156,7 @@ class UIControls {
                 characteristicsElement.style.display = 'none';
             }
         } else {
-            nameElement.textContent = '投影法を選択してください';
+            nameElement.textContent = this.languageManager.t('infoSection.selectPrompt');
             descriptionElement.textContent = '';
             propertiesElement.textContent = '';
             characteristicsElement.style.display = 'none';
@@ -162,58 +164,7 @@ class UIControls {
     }
 
     getProjectionCharacteristics(projectionName) {
-        const characteristics = {
-            mercator: [
-                '直線は直線のまま保持される',
-                '角度が正確に保たれる',
-                '極地で大きな面積の歪み',
-                'Web地図で標準的に使用'
-            ],
-            stereographic: [
-                '角度が正確に保たれる',
-                '円は円のまま保持される',
-                '中心から離れると歪みが増加',
-                '半球の表示に適している'
-            ],
-            equalEarth: [
-                '面積が正確に保たれる',
-                '視覚的に自然な外観',
-                '直線的な極地線',
-                '現代の世界地図に推奨'
-            ],
-            mollweide: [
-                '面積が正確に保たれる',
-                '楕円形の世界表現',
-                '中央経線で角度歪みなし',
-                'テーマ地図に適している'
-            ],
-            azimuthalEquidistant: [
-                '中心からの距離が正確',
-                '中心からの方位が正確',
-                '航空路線図で使用',
-                '極地投影として有用'
-            ],
-            orthographic: [
-                '地球を宇宙から見た視点',
-                '半球のみ表示',
-                '立体的な外観',
-                '教育用途に最適'
-            ],
-            gnomonic: [
-                '大圏航路が直線になる',
-                '航海用に有用',
-                '中心から離れると極端な歪み',
-                '半球の一部のみ表示可能'
-            ],
-            naturalEarth1: [
-                '妥協図法（面積・角度・距離のバランス）',
-                '視覚的に美しい',
-                '一般的な世界地図に適している',
-                '教育・メディア用途で人気'
-            ]
-        };
-
-        return characteristics[projectionName] || [];
+        return this.languageManager.t(`projections.${projectionName}.characteristics`) || [];
     }
 
     handleProjectionChange(projectionName) {
