@@ -5,7 +5,7 @@
 ## 残りの実装
 
 - [ ] 横顔geojsonの出典を追記
-- [ ] ティソーの指標（Tissot's indicatrix）、正確なものを用意
+- [x] ティソーの指標（Tissot's indicatrix）、正確なものを用意
 - [x] Webカムからの画像インプットを受け付ける。
 - [ ] v3ベースの参考サイトからProjection手法を取り入れる。
 - [ ] クレジットの追加
@@ -17,10 +17,6 @@
 
 このプロジェクトは、さまざまな地図投影法がデータに与える歪みを可視化するWebアプリケーションです。
 参考サイトを踏まえつつ、より柔軟な入力形式と豊富な投影法に対応します。
-
-### 参考
-- https://github.com/n1n9-jp/projection-face
-- https://gist.github.com/awoodruff/9216081
 
 
 
