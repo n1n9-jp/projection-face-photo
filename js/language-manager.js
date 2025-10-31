@@ -12,7 +12,8 @@ class LanguageManager {
             ja: {
                 header: {
                     title: '顔の画像で学ぶ地図投影法',
-                    projectionLabel: '投影法:'
+                    projectionLabel: '投影法:',
+                    tagline: '顔写真や地図データを投影し、歪みの違いを体験しましょう。'
                 },
                 inputSection: {
                     title: '顔の画像データ入力',
@@ -228,7 +229,8 @@ class LanguageManager {
             en: {
                 header: {
                     title: 'Learn Map Projections with Face Photos',
-                    projectionLabel: 'Projection:'
+                    projectionLabel: 'Projection:',
+                    tagline: 'Explore projection distortions with face photos and GeoJSON data.'
                 },
                 inputSection: {
                     title: 'Face Image Data Input',
