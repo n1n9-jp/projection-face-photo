@@ -12,11 +12,6 @@ class SampleManager {
                     filename: 'face.geojson',
                     path: 'samples/face.geojson',
                     key: 'face'
-                },
-                {
-                    filename: 'geometric-shapes.geojson',
-                    path: 'samples/geometric-shapes.geojson',
-                    key: 'geometric'
                 }
             ],
             images: [

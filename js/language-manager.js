@@ -171,10 +171,6 @@ class LanguageManager {
                             name: '顔 (Face)',
                             description: '人の顔を模したGeoJSONデータ'
                         },
-                        geometric: {
-                            name: '幾何学図形',
-                            description: '三角形、五角形、星形など'
-                        },
                         tissot: {
                             name: 'ティソーの指示楕円',
                             description: '投影法の歪みを確認する円形パターン'
@@ -392,10 +388,6 @@ class LanguageManager {
                         face: {
                             name: 'Face',
                             description: 'GeoJSON data representing a human face'
-                        },
-                        geometric: {
-                            name: 'Geometric Shapes',
-                            description: 'Triangles, pentagons, stars, etc.'
                         },
                         tissot: {
                             name: "Tissot's Indicatrix",
