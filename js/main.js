@@ -8,6 +8,7 @@ class MapProjectionApp {
         this.sampleManager = new SampleManager(this.languageManager);
         
         this.isInitialized = false;
+        this.sampleUIInitialized = false;
     }
 
     async initialize() {
@@ -242,21 +243,23 @@ class MapProjectionApp {
         const imageContainer = document.getElementById('image-samples');
         const inputTypeRadios = document.querySelectorAll('input[name="input-type"]');
 
-        // サンプルアイテムを生成
         if (geoJsonContainer && imageContainer) {
             this.populateSampleItems('geojson', geoJsonContainer);
             this.populateSampleItems('images', imageContainer);
         }
 
-        // ラジオボタンのイベントリスナー
-        inputTypeRadios.forEach(radio => {
-            radio.addEventListener('change', (event) => {
-                this.handleInputTypeChange(event.target.value);
+        if (!this.sampleUIInitialized) {
+            inputTypeRadios.forEach(radio => {
+                radio.addEventListener('change', (event) => {
+                    this.handleInputTypeChange(event.target.value);
+                });
             });
-        });
+            this.sampleUIInitialized = true;
+        }
 
-        // 初期状態を設定
-        this.handleInputTypeChange('image');
+        const checkedRadio = document.querySelector('input[name="input-type"]:checked');
+        const currentType = checkedRadio ? checkedRadio.value : this.inputHandler.currentInputType || 'image';
+        this.handleInputTypeChange(currentType);
     }
 
     handleInputTypeChange(inputType) {
@@ -264,6 +267,8 @@ class MapProjectionApp {
         const imageList = document.getElementById('sample-image-list');
         const fileInputArea = document.getElementById('file-input-area');
         const webcamArea = document.getElementById('webcam-area');
+
+        this.inputHandler.setInputType(inputType);
 
         // すべてを非表示にしてから必要なものを表示
         geoJsonList.style.display = 'none';

@@ -1,7 +1,7 @@
 class InputHandler {
     constructor(languageManager) {
         this.languageManager = languageManager;
-        this.currentInputType = 'geojson';
+        this.currentInputType = 'image';
         this.currentData = null;
         this.supportedImageTypes = ['image/png', 'image/jpeg', 'image/jpg'];
         this.supportedGeoTypes = ['application/json', 'application/geo+json'];
@@ -19,6 +19,7 @@ class InputHandler {
     initialize() {
         this.setupEventListeners();
         this.setupDropZone();
+        this.setInputType(this.currentInputType);
     }
 
     setupEventListeners() {
