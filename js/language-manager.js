@@ -445,11 +445,40 @@ class LanguageManager {
     }
 
     initialize() {
-        // Load saved language from localStorage
-        const savedLanguage = localStorage.getItem('mapProjectionApp_language');
-        if (savedLanguage && this.translations[savedLanguage]) {
-            this.currentLanguage = savedLanguage;
+        let initialLanguage = this.currentLanguage;
+
+        let savedLanguage = null;
+        try {
+            savedLanguage = localStorage.getItem('mapProjectionApp_language');
+        } catch (error) {
+            savedLanguage = null;
         }
+
+        let urlLanguage = null;
+        if (typeof window !== 'undefined' && window.location) {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                urlLanguage = params.get('lang');
+            } catch (error) {
+                urlLanguage = null;
+            }
+        }
+
+        if (urlLanguage && this.translations[urlLanguage]) {
+            initialLanguage = urlLanguage;
+        } else if (savedLanguage && this.translations[savedLanguage]) {
+            initialLanguage = savedLanguage;
+        }
+
+        this.currentLanguage = initialLanguage;
+
+        try {
+            localStorage.setItem('mapProjectionApp_language', this.currentLanguage);
+        } catch (error) {
+            // ignore storage failures
+        }
+
+        this.updateURLLanguage(this.currentLanguage);
     }
 
     setLanguage(lang) {
@@ -458,11 +487,36 @@ class LanguageManager {
             return false;
         }
 
+        if (lang === this.currentLanguage) {
+            this.updateURLLanguage(lang);
+            return true;
+        }
+
         this.currentLanguage = lang;
-        localStorage.setItem('mapProjectionApp_language', lang);
+        try {
+            localStorage.setItem('mapProjectionApp_language', lang);
+        } catch (error) {
+            // ignore storage failures
+        }
+
+        this.updateURLLanguage(lang);
 
         this.triggerCallback('onLanguageChange', lang);
         return true;
+    }
+
+    updateURLLanguage(lang) {
+        if (typeof window === 'undefined' || !window.history || !window.location) {
+            return;
+        }
+
+        try {
+            const url = new URL(window.location.href);
+            url.searchParams.set('lang', lang);
+            window.history.replaceState({}, '', url.toString());
+        } catch (error) {
+            // ignore URL update issues
+        }
     }
 
     getCurrentLanguage() {
