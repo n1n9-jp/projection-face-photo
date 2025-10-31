@@ -49,7 +49,8 @@ class LanguageManager {
                     showGraticule: '緯度経度線を表示',
                     scale: 'スケール:',
                     rotationX: '回転 (経度):',
-                    rotationY: '回転 (緯度):'
+                    rotationY: '回転 (緯度):',
+                    exportImage: '画像をエクスポート'
                 },
                 infoSection: {
                     title: '投影法情報',
@@ -262,7 +263,8 @@ class LanguageManager {
                     showGraticule: 'Show graticule',
                     scale: 'Scale:',
                     rotationX: 'Rotation (Longitude):',
-                    rotationY: 'Rotation (Latitude):'
+                    rotationY: 'Rotation (Latitude):',
+                    exportImage: 'Export Image'
                 },
                 infoSection: {
                     title: 'Projection Info',

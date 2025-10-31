@@ -64,6 +64,11 @@ class MapProjectionApp {
         this.uiControls.populateProjectionOptions();
         this.uiControls.updateProjectionInfo();
         this.setupSampleUI();
+
+        const exportButton = document.getElementById('export-button');
+        if (exportButton) {
+            exportButton.textContent = this.languageManager.t('controlSection.exportImage');
+        }
     }
 
     setupEventHandlers() {

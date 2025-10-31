@@ -288,7 +288,7 @@ class UIControls {
 
         const exportButton = document.createElement('button');
         exportButton.id = 'export-button';
-        exportButton.textContent = '画像をエクスポート';
+        exportButton.textContent = this.languageManager.t('controlSection.exportImage');
         exportButton.style.cssText = `
             margin-top: 20px;
             padding: 10px 20px;
@@ -309,10 +309,10 @@ class UIControls {
                     link.download = `projection-${this.projectionManager.currentProjection}-${Date.now()}.png`;
                     link.href = dataURL;
                     link.click();
-                    this.showMessage('画像をエクスポートしました', 'info');
+                    this.showMessage(this.languageManager.t('messages.imageExported'), 'info');
                 }
             } catch (error) {
-                this.showMessage('エクスポートに失敗しました', 'error');
+                this.showMessage(this.languageManager.t('messages.exportFailed'), 'error');
             }
         });
 
