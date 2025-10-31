@@ -5,6 +5,8 @@ class UIControls {
         this.languageManager = languageManager;
         this.isUpdating = false;
         this.debounceTimeout = null;
+        this.accordionSections = [];
+        this.accordionState = {};
     }
 
     initialize() {
@@ -12,6 +14,7 @@ class UIControls {
         this.setupControlSliders();
         this.setupProjectionInfo();
         this.updateProjectionInfo();
+        this.initializeAccordion();
     }
 
     setupProjectionSelector() {
@@ -331,6 +334,114 @@ class UIControls {
         if (dataType === 'image') {
             this.addExportButton();
         }
+    }
+
+    initializeAccordion() {
+        this.accordionSections = Array.from(document.querySelectorAll('.accordion-section'));
+
+        this.accordionSections.forEach(section => {
+            const id = section.dataset.accordionId;
+            if (!id) return;
+
+            const toggle = section.querySelector('.accordion-toggle');
+            const content = section.querySelector('.accordion-content');
+
+            if (!toggle || !content) return;
+
+            if (!content.id) {
+                content.id = `accordion-content-${id}`;
+            }
+
+            toggle.setAttribute('aria-controls', content.id);
+            toggle.addEventListener('click', () => {
+                this.toggleAccordionSection(id);
+            });
+        });
+
+        this.applyInitialAccordionState();
+    }
+
+    setAccordionState(newState, options = {}) {
+        const { merge = true } = options;
+
+        if (!this.accordionSections || this.accordionSections.length === 0) {
+            return;
+        }
+
+        if (!this.accordionState) {
+            this.accordionState = {};
+        }
+
+        if (merge) {
+            this.accordionState = {
+                ...this.accordionState,
+                ...newState
+            };
+        } else {
+            const updatedState = {};
+            this.accordionSections.forEach(section => {
+                const id = section.dataset.accordionId;
+                updatedState[id] = Boolean(newState[id]);
+            });
+            this.accordionState = updatedState;
+        }
+
+        this.updateAccordionDOM();
+    }
+
+    updateAccordionDOM() {
+        this.accordionSections.forEach(section => {
+            const id = section.dataset.accordionId;
+            if (!id) return;
+
+            const isOpen = Boolean(this.accordionState[id]);
+            section.classList.toggle('is-open', isOpen);
+
+            const content = section.querySelector('.accordion-content');
+            if (content) {
+                content.hidden = !isOpen;
+            }
+
+            const toggle = section.querySelector('.accordion-toggle');
+            if (toggle) {
+                toggle.setAttribute('aria-expanded', String(isOpen));
+            }
+        });
+    }
+
+    toggleAccordionSection(id) {
+        const current = Boolean(this.accordionState[id]);
+        this.setAccordionState({ [id]: !current }, { merge: true });
+    }
+
+    applyInitialAccordionState() {
+        this.setAccordionState({
+            input: true,
+            controls: false,
+            info: false,
+            data: false
+        }, { merge: false });
+    }
+
+    applyDataLoadedAccordionState() {
+        this.setAccordionState({
+            input: false,
+            controls: true,
+            info: true,
+            data: false
+        }, { merge: false });
+    }
+
+    resetDataInfo() {
+        const container = document.getElementById('data-info-content');
+        if (!container) return;
+
+        container.innerHTML = '';
+        const placeholder = document.createElement('p');
+        placeholder.className = 'data-info-placeholder';
+        placeholder.dataset.i18n = 'infoSection.noData';
+        placeholder.innerHTML = this.languageManager.t('infoSection.noData');
+        container.appendChild(placeholder);
     }
 }
 

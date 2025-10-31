@@ -354,6 +354,7 @@ class MapProjectionApp {
             );
 
             this.addDataInfo(data);
+            this.uiControls.applyDataLoadedAccordionState();
             
         } catch (error) {
             console.error('Render error:', error);
@@ -362,48 +363,47 @@ class MapProjectionApp {
     }
 
     addDataInfo(data) {
-        const infoSection = document.querySelector('.info-section');
-        
-        let dataInfoDiv = document.getElementById('data-info');
-        if (!dataInfoDiv) {
-            dataInfoDiv = document.createElement('div');
-            dataInfoDiv.id = 'data-info';
-            dataInfoDiv.innerHTML = '<h3>データ情報</h3>';
-            infoSection.appendChild(dataInfoDiv);
+        const dataInfoContainer = document.getElementById('data-info-content');
+        if (!dataInfoContainer) {
+            return;
         }
+
+        dataInfoContainer.innerHTML = '';
 
         const infoContent = document.createElement('div');
         infoContent.className = 'data-details';
-        infoContent.style.cssText = `
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 10px;
-            font-size: 0.9rem;
-        `;
+
+        const fileLabel = this.languageManager.t('infoSection.fileName');
+        const typeLabel = this.languageManager.t('infoSection.dataType');
+        const featureCountLabel = this.languageManager.t('infoSection.featureCount');
+        const formatLabel = this.languageManager.t('infoSection.format');
+        const sizeLabel = this.languageManager.t('infoSection.size');
+        const ratioLabel = this.languageManager.t('infoSection.ratio');
 
         if (data.type === 'geojson') {
             const featureCount = data.data.type === 'FeatureCollection' 
                 ? data.data.features.length 
                 : 1;
-            
+
             infoContent.innerHTML = `
-                <p><strong>ファイル:</strong> ${data.filename}</p>
-                <p><strong>タイプ:</strong> GeoJSON</p>
-                <p><strong>フィーチャー数:</strong> ${featureCount}</p>
-                <p><strong>形式:</strong> ${data.data.type}</p>
+                <p><strong>${fileLabel}</strong> ${data.filename}</p>
+                <p><strong>${typeLabel}</strong> GeoJSON</p>
+                <p><strong>${featureCountLabel}</strong> ${featureCount}</p>
+                <p><strong>${formatLabel}</strong> ${data.data.type}</p>
             `;
         } else if (data.type === 'image') {
+            const currentLang = this.languageManager.getCurrentLanguage();
+            const imageTypeLabel = currentLang === 'ja' ? '画像' : 'Image';
+
             infoContent.innerHTML = `
-                <p><strong>ファイル:</strong> ${data.filename}</p>
-                <p><strong>タイプ:</strong> 画像</p>
-                <p><strong>サイズ:</strong> ${data.width} × ${data.height}px</p>
-                <p><strong>比率:</strong> ${(data.width / data.height).toFixed(2)}</p>
+                <p><strong>${fileLabel}</strong> ${data.filename}</p>
+                <p><strong>${typeLabel}</strong> ${imageTypeLabel}</p>
+                <p><strong>${sizeLabel}</strong> ${data.width} × ${data.height}px</p>
+                <p><strong>${ratioLabel}</strong> ${(data.width / data.height).toFixed(2)}</p>
             `;
         }
 
-        dataInfoDiv.querySelector('.data-details')?.remove();
-        dataInfoDiv.appendChild(infoContent);
+        dataInfoContainer.appendChild(infoContent);
     }
 
     loadSampleDataIfNeeded() {
@@ -462,11 +462,8 @@ class MapProjectionApp {
         this.renderer.clear();
         this.uiControls.disableControls();
         this.clearSampleSelection();
-
-        const dataInfoDiv = document.getElementById('data-info');
-        if (dataInfoDiv) {
-            dataInfoDiv.remove();
-        }
+        this.uiControls.resetDataInfo();
+        this.uiControls.applyInitialAccordionState();
 
         this.uiControls.showMessage('データをクリアしました', 'info');
     }

@@ -37,111 +37,136 @@
 
     <main class="main-container">
         <aside class="sidebar">
-            <section class="input-section">
-                <h2 data-i18n="inputSection.title">顔の画像データ入力</h2>
-
-                <div class="input-type-selector">
-                    <label>
-                        <input type="radio" name="input-type" value="image" checked>
-                        <span data-i18n="inputSection.inputTypes.image">PNG, JPEG</span>
-                    </label>
-                    <label>
-                        <input type="radio" name="input-type" value="webcam">
-                        <span data-i18n="inputSection.inputTypes.webcam">Webカム</span>
-                    </label>
-                    <label>
-                        <input type="radio" name="input-type" value="geojson">
-                        <span data-i18n="inputSection.inputTypes.geojson">GeoJSON</span>
-                    </label>
-                </div>
-
-                <div class="file-input-area" id="file-input-area">
-                    <div class="drop-zone" id="drop-zone">
-                        <p data-i18n="inputSection.dropZone.drag">ファイルをドラッグ&ドロップ</p>
-                        <p data-i18n="inputSection.dropZone.or">または</p>
-                        <input type="file" id="file-input" accept=".geojson,.json,.png,.jpg,.jpeg">
-                        <label for="file-input" class="file-input-button" data-i18n="inputSection.dropZone.select">ファイルを選択</label>
+            <section class="accordion-section input-section is-open" data-accordion-id="input">
+                <button class="accordion-toggle" type="button" aria-expanded="true">
+                    <span data-i18n="inputSection.title">顔の画像データ入力</span>
+                    <span class="accordion-icon" aria-hidden="true"></span>
+                </button>
+                <div class="accordion-content" id="accordion-content-input">
+                    <div class="input-type-selector">
+                        <label>
+                            <input type="radio" name="input-type" value="image" checked>
+                            <span data-i18n="inputSection.inputTypes.image">PNG, JPEG</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="input-type" value="webcam">
+                            <span data-i18n="inputSection.inputTypes.webcam">Webカム</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="input-type" value="geojson">
+                            <span data-i18n="inputSection.inputTypes.geojson">GeoJSON</span>
+                        </label>
                     </div>
-                </div>
 
-                <div class="file-info" id="file-info" style="display: none;">
-                    <p id="file-name"></p>
-                    <p id="file-type"></p>
-                </div>
-
-                <div class="webcam-area" id="webcam-area" style="display: none;">
-                    <div class="webcam-controls">
-                        <button id="start-camera-btn" class="webcam-btn primary" data-i18n="inputSection.webcam.startCamera">カメラを起動</button>
-
-                        <div class="camera-select-group" id="camera-select-group" style="display: none;">
-                            <label for="camera-select" data-i18n="inputSection.webcam.switchCamera">カメラを切替:</label>
-                            <select id="camera-select">
-                                <option value="">カメラを選択...</option>
-                            </select>
+                    <div class="file-input-area" id="file-input-area">
+                        <div class="drop-zone" id="drop-zone">
+                            <p data-i18n="inputSection.dropZone.drag">ファイルをドラッグ&ドロップ</p>
+                            <p data-i18n="inputSection.dropZone.or">または</p>
+                            <input type="file" id="file-input" accept=".geojson,.json,.png,.jpg,.jpeg">
+                            <label for="file-input" class="file-input-button" data-i18n="inputSection.dropZone.select">ファイルを選択</label>
                         </div>
                     </div>
 
-                    <div class="webcam-preview" id="webcam-preview" style="display: none;">
-                        <video id="webcam-video" autoplay playsinline></video>
-                        <div class="webcam-actions">
-                            <button id="capture-btn" class="webcam-btn success" data-i18n="inputSection.webcam.capture">写真を撮る</button>
-                            <button id="stop-camera-btn" class="webcam-btn secondary" data-i18n="inputSection.webcam.stopCamera">停止</button>
+                    <div class="file-info" id="file-info" style="display: none;">
+                        <p id="file-name"></p>
+                        <p id="file-type"></p>
+                    </div>
+
+                    <div class="webcam-area" id="webcam-area" style="display: none;">
+                        <div class="webcam-controls">
+                            <button id="start-camera-btn" class="webcam-btn primary" data-i18n="inputSection.webcam.startCamera">カメラを起動</button>
+
+                            <div class="camera-select-group" id="camera-select-group" style="display: none;">
+                                <label for="camera-select" data-i18n="inputSection.webcam.switchCamera">カメラを切替:</label>
+                                <select id="camera-select">
+                                    <option value="">カメラを選択...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="webcam-preview" id="webcam-preview" style="display: none;">
+                            <video id="webcam-video" autoplay playsinline></video>
+                            <div class="webcam-actions">
+                                <button id="capture-btn" class="webcam-btn success" data-i18n="inputSection.webcam.capture">写真を撮る</button>
+                                <button id="stop-camera-btn" class="webcam-btn secondary" data-i18n="inputSection.webcam.stopCamera">停止</button>
+                            </div>
+                        </div>
+
+                        <div class="webcam-message" id="webcam-message" style="display: none;">
+                            <p id="webcam-message-text"></p>
                         </div>
                     </div>
 
-                    <div class="webcam-message" id="webcam-message" style="display: none;">
-                        <p id="webcam-message-text"></p>
-                    </div>
-                </div>
+                    <div class="sample-section">
+                        <h3 data-i18n="inputSection.samples.title">サンプルデータ</h3>
 
-                <div class="sample-section">
-                    <h3 data-i18n="inputSection.samples.title">サンプルデータ</h3>
+                        <div class="sample-list" id="sample-geojson-list" style="display: none;">
+                            <h4 data-i18n="inputSection.samples.geojsonTitle">GeoJSONサンプル</h4>
+                            <div id="geojson-samples"></div>
+                        </div>
 
-                    <div class="sample-list" id="sample-geojson-list" style="display: none;">
-                        <h4 data-i18n="inputSection.samples.geojsonTitle">GeoJSONサンプル</h4>
-                        <div id="geojson-samples"></div>
-                    </div>
-
-                    <div class="sample-list" id="sample-image-list" style="display: none;">
-                        <h4 data-i18n="inputSection.samples.imageTitle">画像サンプル</h4>
-                        <div id="image-samples"></div>
+                        <div class="sample-list" id="sample-image-list" style="display: none;">
+                            <h4 data-i18n="inputSection.samples.imageTitle">画像サンプル</h4>
+                            <div id="image-samples"></div>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <section class="control-section">
-                <h2 data-i18n="controlSection.title">表示設定</h2>
+            <section class="accordion-section control-section" data-accordion-id="controls">
+                <button class="accordion-toggle" type="button" aria-expanded="false">
+                    <span data-i18n="controlSection.title">表示設定</span>
+                    <span class="accordion-icon" aria-hidden="true"></span>
+                </button>
+                <div class="accordion-content" id="accordion-content-controls">
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="show-graticule" checked>
+                            <span data-i18n="controlSection.showGraticule">緯度経度線を表示</span>
+                        </label>
+                    </div>
 
-                <div class="control-group">
-                    <label>
-                        <input type="checkbox" id="show-graticule" checked>
-                        <span data-i18n="controlSection.showGraticule">緯度経度線を表示</span>
-                    </label>
-                </div>
+                    <div class="control-group">
+                        <label for="scale-slider" data-i18n="controlSection.scale">スケール:</label>
+                        <input type="range" id="scale-slider" min="50" max="500" value="150">
+                        <span id="scale-value">150</span>
+                    </div>
 
-                <div class="control-group">
-                    <label for="scale-slider" data-i18n="controlSection.scale">スケール:</label>
-                    <input type="range" id="scale-slider" min="50" max="500" value="150">
-                    <span id="scale-value">150</span>
-                </div>
+                    <div class="control-group">
+                        <label for="rotation-x" data-i18n="controlSection.rotationX">回転 (経度):</label>
+                        <input type="range" id="rotation-x" min="-180" max="180" value="0">
+                        <span id="rotation-x-value">0°</span>
+                    </div>
 
-                <div class="control-group">
-                    <label for="rotation-x" data-i18n="controlSection.rotationX">回転 (経度):</label>
-                    <input type="range" id="rotation-x" min="-180" max="180" value="0">
-                    <span id="rotation-x-value">0°</span>
-                </div>
-
-                <div class="control-group">
-                    <label for="rotation-y" data-i18n="controlSection.rotationY">回転 (緯度):</label>
-                    <input type="range" id="rotation-y" min="-90" max="90" value="0">
-                    <span id="rotation-y-value">0°</span>
+                    <div class="control-group">
+                        <label for="rotation-y" data-i18n="controlSection.rotationY">回転 (緯度):</label>
+                        <input type="range" id="rotation-y" min="-90" max="90" value="0">
+                        <span id="rotation-y-value">0°</span>
+                    </div>
                 </div>
             </section>
 
-            <section class="info-section">
-                <h2 data-i18n="infoSection.title">投影法情報</h2>
-                <div id="projection-info">
-                    <p data-i18n="infoSection.selectPrompt">投影法を選択してください</p>
+            <section class="accordion-section info-section" data-accordion-id="info">
+                <button class="accordion-toggle" type="button" aria-expanded="false">
+                    <span data-i18n="infoSection.title">投影法情報</span>
+                    <span class="accordion-icon" aria-hidden="true"></span>
+                </button>
+                <div class="accordion-content" id="accordion-content-info">
+                    <div id="projection-info">
+                        <p data-i18n="infoSection.selectPrompt">投影法を選択してください</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="accordion-section data-section" data-accordion-id="data">
+                <button class="accordion-toggle" type="button" aria-expanded="false">
+                    <span data-i18n="infoSection.dataInfo">データ情報</span>
+                    <span class="accordion-icon" aria-hidden="true"></span>
+                </button>
+                <div class="accordion-content" id="accordion-content-data">
+                    <div id="data-info-content">
+                        <p class="data-info-placeholder" data-i18n="infoSection.noData">データが読み込まれていません</p>
+                    </div>
                 </div>
             </section>
         </aside>
