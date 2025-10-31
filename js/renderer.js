@@ -98,14 +98,9 @@ class Renderer {
             this.setupSVG();
         }
 
-        const shouldAnimate = this.shouldAnimate();
+        const previousProjection = this.previousProjection ? this.previousProjection : null;
+        const shouldAnimate = Boolean(previousProjection) && this.shouldAnimate();
         const transition = shouldAnimate ? this.createGeoTransition() : null;
-        const path = d3.geoPath().projection(projection);
-
-        this.updateSinglePath(this.spherePath, {type: 'Sphere'}, path, transition);
-
-        this.updateSinglePath(this.graticulePath, this.geoGraticule(), path, transition);
-        this.updateSinglePath(this.graticuleOutlinePath, this.geoGraticule.outline(), path, transition);
 
         const features = this.extractGeoFeatures(geoData);
         const keyFn = (feature, index) => feature.id || feature.properties?.id || feature.properties?.name || index;
@@ -123,15 +118,78 @@ class Renderer {
 
         const entering = selection.enter()
             .append('path')
-            .attr('class', 'country')
-            .attr('d', d => path(d));
+            .attr('class', 'country');
+
+        if (previousProjection) {
+            const previousPath = d3.geoPath().projection(previousProjection);
+            entering.attr('d', d => previousPath(d));
+        } else {
+            const initialPath = d3.geoPath().projection(projection);
+            entering.attr('d', d => initialPath(d));
+        }
+
+        entering.style('opacity', shouldAnimate ? 0 : 1);
+        if (transition) {
+            entering.transition(transition)
+                .style('opacity', 1);
+        } else {
+            entering.style('opacity', 1);
+        }
 
         const merged = entering.merge(selection);
-        this.applyPathTransition(merged, path, transition);
+
+        const applyProjection = (proj) => {
+            if (!proj) {
+                return;
+            }
+
+            const pathGenerator = d3.geoPath().projection(proj);
+            this.spherePath.attr('d', pathGenerator({type: 'Sphere'}));
+            this.graticulePath.attr('d', pathGenerator(this.geoGraticule()));
+            this.graticuleOutlinePath.attr('d', pathGenerator(this.geoGraticule.outline()));
+            merged.attr('d', d => pathGenerator(d));
+        };
+
+        if (transition && previousProjection) {
+            const transitionStrategy = this.determineProjectionTransition(previousProjection, projection);
+            if (transitionStrategy.type === 'interpolate' && typeof transitionStrategy.interpolate === 'function') {
+                const path = d3.geoPath();
+                const graticule = this.geoGraticule();
+                const graticuleOutline = this.geoGraticule.outline();
+                const sphere = {type: 'Sphere'};
+
+                transition
+                    .on('start', () => {
+                        applyProjection(previousProjection);
+                    })
+                    .tween('projection', () => {
+                        return (t) => {
+                            const currentProjection = transitionStrategy.interpolate(t);
+                            path.projection(currentProjection);
+                            this.spherePath.attr('d', path(sphere));
+                            this.graticulePath.attr('d', path(graticule));
+                            this.graticuleOutlinePath.attr('d', path(graticuleOutline));
+                            merged.attr('d', d => path(d));
+                        };
+                    })
+                    .on('end', () => {
+                        applyProjection(projection);
+                    })
+                    .on('interrupt', () => {
+                        applyProjection(projection);
+                    });
+            } else if (transitionStrategy.type === 'crossfade') {
+                this.performCrossFadeTransition(applyProjection, projection);
+            } else {
+                applyProjection(projection);
+            }
+        } else {
+            applyProjection(projection);
+        }
 
         this.updateGraticuleVisibility();
 
-        this.previousProjection = projection;
+        this.previousProjection = typeof projection.copy === 'function' ? projection.copy() : projection;
     }
 
     async updateProjection() {
@@ -153,7 +211,9 @@ class Renderer {
 
         // Always use direct rendering for images (transitions disabled for now)
         await this.renderImageDirect(imageElement, configuredProjection);
-        this.previousProjection = configuredProjection;
+        this.previousProjection = typeof configuredProjection.copy === 'function'
+            ? configuredProjection.copy()
+            : configuredProjection;
     }
 
     async renderImageDirect(imageElement, projection) {
@@ -287,27 +347,425 @@ class Renderer {
         };
     }
 
-    applyPathTransition(selection, pathGenerator, transition) {
-        if (transition) {
-            selection.transition(transition)
-                .attrTween('d', function(d) {
-                    const previous = d3.select(this).attr('d');
-                    const current = pathGenerator(d);
-                    if (!previous || previous === current) {
-                        return () => current;
-                    }
-                    const interpolator = d3.interpolateString(previous, current);
-                    return (t) => interpolator(t);
-                });
-        } else {
-            selection.attr('d', d => pathGenerator(d));
+    determineProjectionTransition(previousProjection, nextProjection) {
+        if (!previousProjection || !nextProjection) {
+            return { type: 'none' };
         }
+
+        if (this.shouldUseCrossFade(previousProjection, nextProjection)) {
+            return { type: 'crossfade' };
+        }
+
+        const raw0 = previousProjection.raw;
+        const raw1 = nextProjection.raw;
+
+        if (typeof raw0 === 'function' && typeof raw1 === 'function' && this.isRawInterpolationSafe(raw0, raw1)) {
+            return {
+                type: 'interpolate',
+                interpolate: this.createRawProjectionInterpolator(previousProjection, nextProjection, raw0, raw1)
+            };
+        }
+
+        return {
+            type: 'interpolate',
+            interpolate: this.createTransformProjectionInterpolator(previousProjection, nextProjection)
+        };
     }
 
-    updateSinglePath(selection, datum, pathGenerator, transition) {
-        if (!selection) return;
-        selection.datum(datum);
-        this.applyPathTransition(selection, pathGenerator, transition);
+    createRawProjectionInterpolator(previousProjection, nextProjection, raw0, raw1) {
+
+        const renderer = this;
+        const scale0 = previousProjection.scale();
+        const scale1 = nextProjection.scale();
+
+        const translate0 = previousProjection.translate();
+        const translate1 = nextProjection.translate();
+
+        const center0 = previousProjection.center();
+        const center1 = nextProjection.center();
+
+        const rotate0 = previousProjection.rotate();
+        const rotate1 = nextProjection.rotate();
+
+        const precision0 = previousProjection.precision();
+        const precision1 = nextProjection.precision();
+
+        const clipAngle0 = previousProjection.clipAngle();
+        const clipAngle1 = nextProjection.clipAngle();
+
+        const clipExtent0 = previousProjection.clipExtent();
+        const clipExtent1 = nextProjection.clipExtent();
+
+        const reflectX0 = this.getProjectionReflection(previousProjection, 'reflectX');
+        const reflectX1 = this.getProjectionReflection(nextProjection, 'reflectX');
+        const reflectY0 = this.getProjectionReflection(previousProjection, 'reflectY');
+        const reflectY1 = this.getProjectionReflection(nextProjection, 'reflectY');
+
+        return (t) => {
+            if (t <= 0) {
+                return previousProjection;
+            }
+            if (t >= 1) {
+                return nextProjection;
+            }
+
+            const raw = function(lambda, phi) {
+                const p0 = raw0(lambda, phi);
+                const p1 = raw1(lambda, phi);
+
+                const validP0 = renderer.isValidProjectedPoint(p0);
+                const validP1 = renderer.isValidProjectedPoint(p1);
+
+                if (!validP0 && !validP1) {
+                    return null;
+                }
+
+                if (!validP0) {
+                    return p1;
+                }
+
+                if (!validP1) {
+                    return p0;
+                }
+
+                return [
+                    p0[0] + (p1[0] - p0[0]) * t,
+                    p0[1] + (p1[1] - p0[1]) * t
+                ];
+            };
+
+            const interpolated = d3.geoProjection(raw)
+                .scale(this.interpolateNumber(scale0, scale1, t))
+                .translate(this.interpolateArray(translate0, translate1, t))
+                .center(this.interpolateArray(center0, center1, t))
+                .rotate(this.interpolateArray(rotate0, rotate1, t))
+                .precision(this.interpolateNumber(precision0, precision1, t));
+
+            const clipAngle = renderer.interpolateClipAngle(clipAngle0, clipAngle1, t);
+            if (clipAngle === null) {
+                interpolated.clipAngle(null);
+            } else if (!Number.isNaN(clipAngle)) {
+                interpolated.clipAngle(Math.max(0, clipAngle));
+            }
+
+            const clipExtent = renderer.interpolateClipExtent(clipExtent0, clipExtent1, t);
+            if (clipExtent) {
+                interpolated.clipExtent(clipExtent);
+            } else {
+                interpolated.clipExtent(null);
+            }
+
+            const reflectX = renderer.interpolateBoolean(reflectX0, reflectX1, t);
+            if (typeof interpolated.reflectX === 'function' && reflectX !== null) {
+                interpolated.reflectX(reflectX);
+            }
+
+            const reflectY = renderer.interpolateBoolean(reflectY0, reflectY1, t);
+            if (typeof interpolated.reflectY === 'function' && reflectY !== null) {
+                interpolated.reflectY(reflectY);
+            }
+
+            return interpolated;
+        };
+    }
+
+    createTransformProjectionInterpolator(previousProjection, nextProjection) {
+        const renderer = this;
+        return (t) => {
+            if (t <= 0) {
+                return previousProjection;
+            }
+            if (t >= 1) {
+                return nextProjection;
+            }
+
+            let currentT = t;
+
+            return d3.geoTransform({
+                point: function(x, y) {
+                    const p0 = previousProjection([x, y]);
+                    const p1 = nextProjection([x, y]);
+
+                    const validP0 = renderer.isValidProjectedPoint(p0);
+                    const validP1 = renderer.isValidProjectedPoint(p1);
+
+                    if (!validP0 && !validP1) {
+                        return;
+                    }
+
+                    if (!validP0) {
+                        this.stream.point(p1[0], p1[1]);
+                        return;
+                    }
+
+                    if (!validP1) {
+                        this.stream.point(p0[0], p0[1]);
+                        return;
+                    }
+
+                    this.stream.point(
+                        p0[0] + (p1[0] - p0[0]) * currentT,
+                        p0[1] + (p1[1] - p0[1]) * currentT
+                    );
+                },
+                sphere: function() {
+                    if (this.stream.sphere) {
+                        this.stream.sphere();
+                    }
+                },
+                lineStart: function() {
+                    if (this.stream.lineStart) {
+                        this.stream.lineStart();
+                    }
+                },
+                lineEnd: function() {
+                    if (this.stream.lineEnd) {
+                        this.stream.lineEnd();
+                    }
+                },
+                polygonStart: function() {
+                    if (this.stream.polygonStart) {
+                        this.stream.polygonStart();
+                    }
+                },
+                polygonEnd: function() {
+                    if (this.stream.polygonEnd) {
+                        this.stream.polygonEnd();
+                    }
+                }
+            });
+        };
+    }
+
+    performCrossFadeTransition(applyProjection, targetProjection) {
+        const currentGroupNode = this.geoGroup.node();
+        if (!currentGroupNode) {
+            applyProjection(targetProjection);
+            return;
+        }
+
+        const previousGroupNode = currentGroupNode.cloneNode(true);
+        if (!previousGroupNode) {
+            applyProjection(targetProjection);
+            return;
+        }
+
+        previousGroupNode.classList.add('geo-layer-previous');
+        const svgNode = this.svg.node();
+        svgNode.appendChild(previousGroupNode);
+
+        const previousSelection = d3.select(previousGroupNode);
+        const currentSelection = this.geoGroup;
+
+        previousSelection.interrupt().style('opacity', 1);
+        currentSelection.interrupt().style('opacity', 0);
+
+        applyProjection(targetProjection);
+
+        const duration = this.transitionDuration;
+        previousSelection.transition()
+            .duration(duration)
+            .ease(d3.easeCubicInOut)
+            .style('opacity', 0)
+            .remove();
+
+        currentSelection.transition()
+            .duration(duration)
+            .ease(d3.easeCubicInOut)
+            .style('opacity', 1);
+    }
+
+    isRawInterpolationSafe(raw0, raw1) {
+        const samplePoints = [
+            [0, 0],
+            [Math.PI / 6, 0],
+            [-Math.PI / 6, 0],
+            [0, Math.PI / 6],
+            [0, -Math.PI / 6],
+            [Math.PI / 4, Math.PI / 8],
+            [-Math.PI / 4, Math.PI / 8],
+            [Math.PI / 3, 0],
+            [-Math.PI / 3, 0],
+            [0, Math.PI / 3],
+            [0, -Math.PI / 3],
+            [Math.PI / 2.2, 0],
+            [-Math.PI / 2.2, 0],
+            [0, Math.PI * 0.49],
+            [0, -Math.PI * 0.49]
+        ];
+
+        for (const [lambda, phi] of samplePoints) {
+            const p0 = raw0(lambda, phi);
+            const p1 = raw1(lambda, phi);
+            const valid0 = this.isValidRawPoint(p0);
+            const valid1 = this.isValidRawPoint(p1);
+
+            if (valid0 !== valid1) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    isValidRawPoint(point) {
+        if (!point || !isFinite(point[0]) || !isFinite(point[1])) {
+            return false;
+        }
+
+        const [x, y] = point;
+        const limit = Math.PI * 4;
+        return Math.abs(x) <= limit && Math.abs(y) <= limit;
+    }
+
+    isValidProjectedPoint(point) {
+        if (!point || !isFinite(point[0]) || !isFinite(point[1])) {
+            return false;
+        }
+        const [x, y] = point;
+        const thresholdX = this.width * 20;
+        const thresholdY = this.height * 20;
+        return Math.abs(x) <= thresholdX && Math.abs(y) <= thresholdY;
+    }
+
+    shouldUseCrossFade(previousProjection, nextProjection) {
+        const angle0 = this.getProjectionClipAngle(previousProjection);
+        const angle1 = this.getProjectionClipAngle(nextProjection);
+
+        const severe0 = this.isSevereClipAngle(angle0);
+        const severe1 = this.isSevereClipAngle(angle1);
+
+        if (!severe0 && !severe1) {
+            return false;
+        }
+
+        if (severe0 && severe1) {
+            const diff = Math.abs((angle0 || 0) - (angle1 || 0));
+            return diff > 5;
+        }
+
+        return true;
+    }
+
+    getProjectionClipAngle(projection) {
+        if (projection && typeof projection.clipAngle === 'function') {
+            const angle = projection.clipAngle();
+            return typeof angle === 'number' ? angle : null;
+        }
+        return null;
+    }
+
+    isSevereClipAngle(angle) {
+        if (angle == null || Number.isNaN(angle)) {
+            return false;
+        }
+        return angle <= 95;
+    }
+
+    interpolateNumber(a, b, t) {
+        if (typeof a !== 'number' && typeof b !== 'number') {
+            return 0;
+        }
+        if (typeof a !== 'number') {
+            return b;
+        }
+        if (typeof b !== 'number') {
+            return a;
+        }
+        return a + (b - a) * t;
+    }
+
+    interpolateArray(a, b, t) {
+        if (!Array.isArray(a) && !Array.isArray(b)) {
+            return [];
+        }
+
+        if (!Array.isArray(a)) {
+            return b.slice();
+        }
+
+        if (!Array.isArray(b)) {
+            return a.slice();
+        }
+
+        const length = Math.max(a.length, b.length);
+        const result = [];
+        for (let i = 0; i < length; i++) {
+            const valueA = typeof a[i] === 'number' ? a[i] : b[i];
+            const valueB = typeof b[i] === 'number' ? b[i] : a[i];
+            result.push(this.interpolateNumber(valueA, valueB, t));
+        }
+        return result;
+    }
+
+    interpolateClipAngle(a, b, t) {
+        if (a == null && b == null) {
+            return null;
+        }
+
+        const angleA = a == null ? 180 : a;
+        const angleB = b == null ? 180 : b;
+        const interpolated = angleA + (angleB - angleA) * t;
+
+        if (interpolated >= 179.999) {
+            return null;
+        }
+
+        return interpolated;
+    }
+
+    interpolateClipExtent(a, b, t) {
+        if (!a && !b) {
+            return null;
+        }
+
+        const extentA = a || b;
+        const extentB = b || a;
+
+        if (!extentA || !extentB) {
+            return null;
+        }
+
+        return [
+            [
+                this.interpolateNumber(extentA[0][0], extentB[0][0], t),
+                this.interpolateNumber(extentA[0][1], extentB[0][1], t)
+            ],
+            [
+                this.interpolateNumber(extentA[1][0], extentB[1][0], t),
+                this.interpolateNumber(extentA[1][1], extentB[1][1], t)
+            ]
+        ];
+    }
+
+    interpolateBoolean(a, b, t) {
+        const isBoolA = typeof a === 'boolean';
+        const isBoolB = typeof b === 'boolean';
+
+        if (!isBoolA && !isBoolB) {
+            return null;
+        }
+
+        if (!isBoolA) {
+            return b;
+        }
+
+        if (!isBoolB) {
+            return a;
+        }
+
+        return t < 0.5 ? a : b;
+    }
+
+    getProjectionReflection(projection, method) {
+        if (typeof projection[method] === 'function') {
+            try {
+                return projection[method]();
+            } catch (error) {
+                return null;
+            }
+        }
+        return null;
     }
 
     extractGeoFeatures(geoData) {
