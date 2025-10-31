@@ -43,6 +43,24 @@ body {
     opacity: 0.9;
 }
 
+.header-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.8rem;
+}
+
+.header-links a {
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: underline;
+}
+
+.header-links a:hover,
+.header-links a:focus {
+    color: #fff;
+    text-decoration: none;
+}
+
 .header-controls {
     display: flex;
     gap: 1.5rem;
@@ -657,6 +675,7 @@ body {
     .header-text {
         align-items: center;
         text-align: center;
+        gap: 0.5rem;
     }
     
     .header h1 {
@@ -666,6 +685,11 @@ body {
     
     .header-tagline {
         font-size: 0.85rem;
+        text-align: center;
+    }
+    
+    .header-links {
+        justify-content: center;
         text-align: center;
     }
     

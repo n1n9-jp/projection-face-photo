@@ -13,7 +13,11 @@ class LanguageManager {
                 header: {
                     title: '顔の画像で学ぶ地図投影法',
                     projectionLabel: '投影法:',
-                    tagline: '顔写真や地図データを投影し、歪みの違いを体験しましょう。'
+                    tagline: '顔写真や地図データを投影し、歪みの違いを体験しましょう。',
+                    links: {
+                        projectionFace: '顔でわかる地図投影のゆがみ：Projection Face',
+                        tissot: 'ティソーの指標（Tissot’s indicatrix）'
+                    }
                 },
                 inputSection: {
                     title: '顔の画像データ入力',
@@ -231,7 +235,11 @@ class LanguageManager {
                 header: {
                     title: 'Learn Map Projections with Face Photos',
                     projectionLabel: 'Projection:',
-                    tagline: 'Explore projection distortions with face photos and GeoJSON data.'
+                    tagline: 'Explore projection distortions with face photos and GeoJSON data.',
+                    links: {
+                        projectionFace: 'Understanding Map Projection Distortions with Faces',
+                        tissot: "Tissot's Indicatrix"
+                    }
                 },
                 inputSection: {
                     title: 'Face Image Data Input',
