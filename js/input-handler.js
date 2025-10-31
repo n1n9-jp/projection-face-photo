@@ -5,6 +5,8 @@ class InputHandler {
         this.currentData = null;
         this.supportedImageTypes = ['image/png', 'image/jpeg', 'image/jpg'];
         this.supportedGeoTypes = ['application/json', 'application/geo+json'];
+        this.isIOS = this.detectIOS();
+        this.maxImageDimension = this.isIOS ? 480 : 900;
         this.callbacks = {
             onDataLoaded: null,
             onError: null,
@@ -20,6 +22,11 @@ class InputHandler {
         this.setupEventListeners();
         this.setupDropZone();
         this.setInputType(this.currentInputType);
+    }
+
+    detectIOS() {
+        if (typeof navigator === 'undefined') return false;
+        return /iP(hone|od|ad)/.test(navigator.userAgent);
     }
 
     setupEventListeners() {
@@ -147,19 +154,24 @@ class InputHandler {
     loadImage(file) {
         const reader = new FileReader();
         
-        reader.onload = (event) => {
+        reader.onload = async (event) => {
             const img = new Image();
             
-            img.onload = () => {
-                this.currentData = {
-                    type: 'image',
-                    data: img,
-                    filename: file.name,
-                    width: img.width,
-                    height: img.height
-                };
-                this.hideProgress();
-                this.triggerCallback('onDataLoaded', this.currentData);
+            img.onload = async () => {
+                try {
+                    const processedImage = await this.scaleImageIfNeeded(img);
+                    this.currentData = {
+                        type: 'image',
+                        data: processedImage,
+                        filename: file.name,
+                        width: processedImage.width,
+                        height: processedImage.height
+                    };
+                    this.hideProgress();
+                    this.triggerCallback('onDataLoaded', this.currentData);
+                } catch (error) {
+                    this.showError(this.languageManager.t('messages.imageLoadError'));
+                }
             };
 
             img.onerror = () => {
@@ -181,6 +193,34 @@ class InputHandler {
         };
 
         reader.readAsDataURL(file);
+    }
+
+    scaleImageIfNeeded(image) {
+        if (!image || !image.width || !image.height) {
+            return Promise.resolve(image);
+        }
+
+        const maxSide = Math.max(image.width, image.height);
+        if (maxSide <= this.maxImageDimension) {
+            return Promise.resolve(image);
+        }
+
+        const ratio = this.maxImageDimension / maxSide;
+        const targetWidth = Math.round(image.width * ratio);
+        const targetHeight = Math.round(image.height * ratio);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+        return new Promise((resolve, reject) => {
+            const resizedImage = new Image();
+            resizedImage.onload = () => resolve(resizedImage);
+            resizedImage.onerror = reject;
+            resizedImage.src = canvas.toDataURL('image/png');
+        });
     }
 
     validateGeoJSON(data) {
