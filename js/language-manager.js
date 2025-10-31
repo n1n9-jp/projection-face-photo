@@ -177,7 +177,7 @@ class LanguageManager {
                     images: {
                         self: {
                             name: '自撮り写真',
-                            description: '顔写真のサンプル'
+                            description: '画像はツール作者本人です。'
                         },
                         lena: {
                             name: 'レナ',
@@ -393,7 +393,7 @@ class LanguageManager {
                     images: {
                         self: {
                             name: 'Selfie',
-                            description: 'Sample face photo'
+                            description: "Sample image by the tool's creator."
                         },
                         lena: {
                             name: 'Lena',
