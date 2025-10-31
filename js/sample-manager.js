@@ -4,6 +4,11 @@ class SampleManager {
         this.samples = {
             geojson: [
                 {
+                    filename: 'tissot-circles.geojson',
+                    path: 'samples/tissot-circles.geojson',
+                    key: 'tissot'
+                },
+                {
                     filename: 'face.geojson',
                     path: 'samples/face.geojson',
                     key: 'face'
@@ -12,11 +17,6 @@ class SampleManager {
                     filename: 'geometric-shapes.geojson',
                     path: 'samples/geometric-shapes.geojson',
                     key: 'geometric'
-                },
-                {
-                    filename: 'tissot-circles.geojson',
-                    path: 'samples/tissot-circles.geojson',
-                    key: 'tissot'
                 }
             ],
             images: [
