@@ -16,7 +16,7 @@ class LanguageManager {
                     tagline: '顔写真や地図データを投影し、歪みの違いを体験しましょう。',
                     links: {
                         projectionFace: '顔でわかる地図投影のゆがみ：Projection Face',
-                        tissot: 'ティソーの指標（Tissot’s indicatrix）'
+                        tissot: 'ティソーの指示楕円（Tissot’s indicatrix）'
                     }
                 },
                 inputSection: {
@@ -176,7 +176,7 @@ class LanguageManager {
                             description: '三角形、五角形、星形など'
                         },
                         tissot: {
-                            name: 'ティソの示円',
+                            name: 'ティソーの指示楕円',
                             description: '投影法の歪みを確認する円形パターン'
                         }
                     },
