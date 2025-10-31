@@ -267,6 +267,7 @@ class MapProjectionApp {
         const imageList = document.getElementById('sample-image-list');
         const fileInputArea = document.getElementById('file-input-area');
         const webcamArea = document.getElementById('webcam-area');
+        const sampleSection = document.querySelector('.sample-section');
 
         this.inputHandler.setInputType(inputType);
 
@@ -275,6 +276,9 @@ class MapProjectionApp {
         imageList.style.display = 'none';
         fileInputArea.style.display = 'none';
         webcamArea.style.display = 'none';
+        if (sampleSection) {
+            sampleSection.style.display = 'block';
+        }
 
         if (inputType === 'geojson') {
             geoJsonList.style.display = 'block';
@@ -284,6 +288,9 @@ class MapProjectionApp {
             fileInputArea.style.display = 'block';
         } else if (inputType === 'webcam') {
             webcamArea.style.display = 'block';
+            if (sampleSection) {
+                sampleSection.style.display = 'none';
+            }
             // カメラを停止（別の入力タイプから切り替えた場合）
             if (this.inputHandler.isWebcamActive()) {
                 this.stopWebcam();
