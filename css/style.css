@@ -472,16 +472,6 @@ body {
     font-size: 0.9rem;
 }
 
-.footer a {
-    color: #ffdd57;
-    text-decoration: underline;
-}
-
-.footer a:hover,
-.footer a:focus {
-    text-decoration: none;
-}
-
 /* SVG Styles */
 .country {
     fill: none;

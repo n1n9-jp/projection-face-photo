@@ -214,8 +214,7 @@ class LanguageManager {
                     captureError: '画像のキャプチャに失敗しました'
                 },
                 footer: {
-                    text: '地図投影法の歪みを可視化 - 顔写真やGeoJSONデータで投影法の特性を理解',
-                    credit: 'face.geojsonは<a href="https://gist.github.com/awoodruff/9216081#file-face-geojson" target="_blank" rel="noopener noreferrer">こちら</a>から取得しています。'
+                    text: '地図投影法の歪みを可視化 - 顔写真やGeoJSONデータで投影法の特性を理解'
                 },
                 loading: {
                     converting: '変換中...'
@@ -429,8 +428,7 @@ class LanguageManager {
                     captureError: 'Failed to capture image'
                 },
                 footer: {
-                    text: 'Visualize map projection distortions - Understand projection characteristics with face photos and GeoJSON data',
-                    credit: 'face.geojson sourced from <a href="https://gist.github.com/awoodruff/9216081#file-face-geojson" target="_blank" rel="noopener noreferrer">this resource</a>.'
+                    text: 'Visualize map projection distortions - Understand projection characteristics with face photos and GeoJSON data'
                 },
                 loading: {
                     converting: 'Converting...'
