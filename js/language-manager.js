@@ -37,7 +37,8 @@ class LanguageManager {
                         stopCamera: '停止',
                         capture: '写真を撮る',
                         selectCamera: 'カメラ:',
-                        switchCamera: 'カメラを切替:'
+                        switchCamera: 'カメラを切替:',
+                        notice: '撮影した顔画像はサーバ側では一切保存していません。'
                     },
                     samples: {
                         title: 'サンプルデータ',
@@ -254,7 +255,8 @@ class LanguageManager {
                         stopCamera: 'Stop',
                         capture: 'Take Photo',
                         selectCamera: 'Camera:',
-                        switchCamera: 'Switch Camera:'
+                        switchCamera: 'Switch Camera:',
+                        notice: "We do not store captured images on any server."
                     },
                     samples: {
                         title: 'Sample Data',

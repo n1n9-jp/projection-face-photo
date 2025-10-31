@@ -264,6 +264,12 @@ body {
     gap: 1rem;
 }
 
+.webcam-notice {
+    font-size: 0.85rem;
+    color: #555;
+    margin: 0;
+}
+
 .camera-select-group {
     display: flex;
     flex-direction: column;
