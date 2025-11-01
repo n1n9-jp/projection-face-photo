@@ -28,7 +28,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
-    max-width: 520px;
+    max-width: 680px;
+    flex: 1 1 560px;
 }
 
 .header h1 {
@@ -45,12 +46,16 @@ body {
 
 .header-links {
     display: flex;
+    flex-direction: row;
     flex-wrap: wrap;
     gap: 0.75rem;
     font-size: 0.8rem;
+    align-items: center;
 }
 
 .header-links a {
+    display: inline-flex;
+    align-items: center;
     color: rgba(255, 255, 255, 0.85);
     text-decoration: underline;
 }
@@ -676,6 +681,8 @@ body {
         align-items: center;
         text-align: center;
         gap: 0.5rem;
+        max-width: 100%;
+        flex: none;
     }
     
     .header h1 {
@@ -689,8 +696,11 @@ body {
     }
     
     .header-links {
+        flex-direction: column;
+        align-items: center;
         justify-content: center;
         text-align: center;
+        gap: 0.5rem;
     }
     
     .sidebar {
