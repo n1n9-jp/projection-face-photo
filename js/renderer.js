@@ -4,6 +4,13 @@ class Renderer {
         this.svg = d3.select('#map-svg');
         this.canvas = document.getElementById('image-canvas');
         this.ctx = this.canvas.getContext('2d');
+        this.webglCanvas = document.getElementById('webgl-canvas');
+        this.webglRenderer = null;
+        this.webglEnabled = false;
+        this.webglInitError = null;
+        this.webglAnimationFrame = null;
+        this.webglAnimationCallback = null;
+        this.overlayNeedsUpdate = false;
         this.width = 800;
         this.height = 600;
         this.currentData = null;
@@ -22,6 +29,7 @@ class Renderer {
     initialize() {
         this.setupSVG();
         this.setupCanvas();
+        this.initializeWebGL();
     }
 
     setupSVG() {
@@ -60,6 +68,68 @@ class Renderer {
         this.ctx.fillRect(0, 0, this.width, this.height);
     }
 
+    detectWebGLSupport() {
+        if (!this.webglCanvas) {
+            return { supported: false, error: new Error('WebGL canvas not found') };
+        }
+
+        try {
+            const testCanvas = document.createElement('canvas');
+            const options = { alpha: true, antialias: true, failIfMajorPerformanceCaveat: true };
+            const gl2 = testCanvas.getContext('webgl2', options);
+
+            if (gl2) {
+                const loseContext = gl2.getExtension('WEBGL_lose_context');
+                if (loseContext) {
+                    loseContext.loseContext();
+                }
+                return { supported: true };
+            }
+
+            return { supported: false, error: new Error('WebGL2 not supported') };
+        } catch (error) {
+            return { supported: false, error };
+        }
+    }
+
+    initializeWebGL() {
+        if (!this.webglCanvas || typeof WebGLImageRenderer === 'undefined') {
+            return;
+        }
+
+        const support = this.detectWebGLSupport();
+        if (!support.supported) {
+            this.webglRenderer = null;
+            this.webglEnabled = false;
+            this.webglInitError = support.error;
+            if (this.webglCanvas) {
+                this.webglCanvas.style.display = 'none';
+            }
+            return;
+        }
+
+        try {
+            this.webglRenderer = new WebGLImageRenderer(this.webglCanvas, this.projectionManager);
+            this.webglRenderer.resize(this.width, this.height);
+            this.webglRenderer.setProjection(this.projectionManager.currentProjection);
+            this.webglRenderer.setView(
+                this.projectionManager.currentScale,
+                this.projectionManager.currentRotation[0],
+                this.projectionManager.currentRotation[1]
+            );
+            this.webglEnabled = true;
+            this.webglCanvas.style.display = 'none';
+        } catch (error) {
+            console.warn('WebGL initialization failed:', error);
+            this.webglRenderer = null;
+            this.webglEnabled = false;
+            this.webglInitError = error;
+            if (this.webglCanvas) {
+                this.webglCanvas.style.display = 'none';
+            }
+        }
+    }
+
     async render(data) {
         if (this.isRendering) return;
         
@@ -70,11 +140,11 @@ class Renderer {
             this.showLoading();
             
             if (data.type === 'geojson') {
+                this.stopWebGLAnimation();
                 await this.renderGeoJSON(data.data);
                 this.showSVG();
             } else if (data.type === 'image') {
                 await this.renderImage(data.data);
-                this.showCanvas();
             }
         } catch (error) {
             console.error('Rendering error:', error);
@@ -202,14 +272,53 @@ class Renderer {
         }
     }
 
+    handleProjectionChange() {
+        if (this.webglEnabled && this.webglRenderer && this.currentData && this.currentData.type === 'image') {
+            this.webglRenderer.setProjection(this.projectionManager.currentProjection);
+            this.markOverlayDirty();
+        }
+    }
 
-    async renderImage(imageElement, useTransition = false) {
+    handleViewChange() {
+        if (this.webglEnabled && this.webglRenderer && this.currentData && this.currentData.type === 'image') {
+            this.webglRenderer.setView(
+                this.projectionManager.currentScale,
+                this.projectionManager.currentRotation[0],
+                this.projectionManager.currentRotation[1]
+            );
+            this.markOverlayDirty();
+            this.refreshOverlay();
+            this.overlayNeedsUpdate = false;
+        }
+    }
+
+
+    async renderImage(imageElement) {
         const projection = this.projectionManager.getCurrentProjection();
         const configuredProjection = this.projectionManager.configureProjection(
             projection, this.width, this.height
         );
 
-        // Always use direct rendering for images (transitions disabled for now)
+        if (this.webglEnabled && this.webglRenderer) {
+            this.webglRenderer.resize(this.width, this.height);
+            this.webglRenderer.loadImage(imageElement);
+            this.webglRenderer.setProjection(this.projectionManager.currentProjection);
+            this.webglRenderer.setView(
+                this.projectionManager.currentScale,
+                this.projectionManager.currentRotation[0],
+                this.projectionManager.currentRotation[1]
+            );
+            this.showWebGL();
+            this.markOverlayDirty();
+            this.refreshOverlay();
+            this.overlayNeedsUpdate = false;
+            this.startWebGLAnimation();
+            this.previousProjection = projection;
+            return;
+        }
+
+        this.stopWebGLAnimation();
+        this.showCanvas();
         await this.renderImageDirect(imageElement, configuredProjection);
         this.previousProjection = typeof configuredProjection.copy === 'function'
             ? configuredProjection.copy()
@@ -242,6 +351,69 @@ class Renderer {
         if (this.showGraticule) {
             this.drawGraticuleOnCanvas(projection);
         }
+    }
+
+    startWebGLAnimation() {
+        if (!this.webglEnabled || !this.webglRenderer) {
+            return;
+        }
+        if (this.webglAnimationFrame) {
+            return;
+        }
+
+        const loop = (timestamp) => {
+            this.webglAnimationFrame = requestAnimationFrame(loop);
+            this.webglRenderer.renderFrame(timestamp || performance.now());
+            if (this.overlayNeedsUpdate) {
+                const transitionActive = typeof this.webglRenderer.isTransitionActive === 'function'
+                    ? this.webglRenderer.isTransitionActive()
+                    : false;
+                if (!transitionActive) {
+                    this.refreshOverlay();
+                    this.overlayNeedsUpdate = false;
+                }
+            }
+        };
+
+        this.webglAnimationCallback = loop;
+        this.webglAnimationFrame = requestAnimationFrame(loop);
+    }
+
+    stopWebGLAnimation() {
+        if (this.webglAnimationFrame) {
+            cancelAnimationFrame(this.webglAnimationFrame);
+            this.webglAnimationFrame = null;
+            this.webglAnimationCallback = null;
+        }
+        if (this.webglEnabled && this.webglRenderer) {
+            this.webglRenderer.clear();
+        }
+    }
+
+    markOverlayDirty() {
+        this.overlayNeedsUpdate = true;
+    }
+
+    refreshOverlay() {
+        if (!this.webglEnabled || !this.webglRenderer) {
+            return;
+        }
+        if (!this.canvas || !this.ctx) {
+            return;
+        }
+
+        this.ctx.clearRect(0, 0, this.width, this.height);
+
+        if (!this.showGraticule) {
+            return;
+        }
+
+        const projection = this.projectionManager.configureProjection(
+            this.projectionManager.getCurrentProjection(),
+            this.width,
+            this.height
+        );
+        this.drawGraticuleOnCanvas(projection);
     }
 
     async transformImageWithProjection(sourceImageData, outputImageData, projection, sourceWidth, sourceHeight, showProgress = true) {
@@ -809,10 +981,24 @@ class Renderer {
     showSVG() {
         this.svg.style('display', 'block');
         this.canvas.style.display = 'none';
+        if (this.webglCanvas) {
+            this.webglCanvas.style.display = 'none';
+        }
     }
 
     showCanvas() {
         this.svg.style('display', 'none');
+        this.canvas.style.display = 'block';
+        if (this.webglCanvas) {
+            this.webglCanvas.style.display = 'none';
+        }
+    }
+
+    showWebGL() {
+        this.svg.style('display', 'none');
+        if (this.webglCanvas) {
+            this.webglCanvas.style.display = 'block';
+        }
         this.canvas.style.display = 'block';
     }
 
@@ -840,14 +1026,29 @@ class Renderer {
         this.svg.attr('width', width).attr('height', height);
         this.canvas.width = width;
         this.canvas.height = height;
+        if (this.webglCanvas) {
+            this.webglCanvas.width = width;
+            this.webglCanvas.height = height;
+        }
+        if (this.webglEnabled && this.webglRenderer) {
+            this.webglRenderer.resize(width, height);
+            this.markOverlayDirty();
+        }
     }
 
     clear() {
         this.previousProjection = null;
         this.setupSVG();
         this.ctx.clearRect(0, 0, this.width, this.height);
-        this.ctx.fillStyle = '#f8f9fa';
-        this.ctx.fillRect(0, 0, this.width, this.height);
+        this.stopWebGLAnimation();
+        if (this.webglEnabled && this.webglRenderer) {
+            this.webglRenderer.clearTexture();
+            this.webglRenderer.clear();
+        } else {
+            this.ctx.fillStyle = '#f8f9fa';
+            this.ctx.fillRect(0, 0, this.width, this.height);
+        }
+        this.overlayNeedsUpdate = false;
     }
 
     drawGraticuleOnCanvas(projection) {
@@ -876,14 +1077,33 @@ class Renderer {
 
         if (this.currentData) {
             if (this.currentData.type === 'image') {
-                const projection = this.projectionManager.configureProjection(
-                    this.projectionManager.getCurrentProjection(),
-                    this.width,
-                    this.height
-                );
-                this.renderImageDirect(this.currentData.data, projection);
+                if (this.webglEnabled && this.webglRenderer) {
+                    this.markOverlayDirty();
+                    const transitionActive = typeof this.webglRenderer.isTransitionActive === 'function'
+                        ? this.webglRenderer.isTransitionActive()
+                        : false;
+                    if (!transitionActive) {
+                        this.refreshOverlay();
+                        this.overlayNeedsUpdate = false;
+                    }
+                } else {
+                    const projection = this.projectionManager.configureProjection(
+                        this.projectionManager.getCurrentProjection(),
+                        this.width,
+                        this.height
+                    );
+                    this.renderImageDirect(this.currentData.data, projection);
+                }
             }
         }
+    }
+
+    supportsWebGL() {
+        return Boolean(this.webglEnabled && this.webglRenderer);
+    }
+
+    getWebGLError() {
+        return this.webglInitError;
     }
 
     exportImage() {
@@ -909,6 +1129,15 @@ class Renderer {
                 img.src = url;
             });
         } else {
+            if (this.webglEnabled && this.webglRenderer && this.webglCanvas) {
+                const exportCanvas = document.createElement('canvas');
+                exportCanvas.width = this.width;
+                exportCanvas.height = this.height;
+                const exportCtx = exportCanvas.getContext('2d');
+                exportCtx.drawImage(this.webglCanvas, 0, 0);
+                exportCtx.drawImage(this.canvas, 0, 0);
+                return Promise.resolve(exportCanvas.toDataURL('image/png'));
+            }
             return Promise.resolve(this.canvas.toDataURL('image/png'));
         }
     }

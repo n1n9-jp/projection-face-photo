@@ -218,6 +218,8 @@ class LanguageManager {
                     permissionDenied: 'カメラへのアクセスが拒否されました',
                     cameraNotFound: 'カメラが見つかりませんでした',
                     cameraInUse: 'カメラが他のアプリケーションで使用中です',
+                    webglNotSupported: 'お使いの環境ではWebGLが利用できません。キャンバス描画に切り替えます。',
+                    webglInitFailed: 'WebGLの初期化に失敗しました。キャンバス描画に切り替えます。',
                     captureError: '画像のキャプチャに失敗しました'
                 },
                 footer: {
@@ -440,6 +442,8 @@ class LanguageManager {
                     permissionDenied: 'Camera access was denied',
                     cameraNotFound: 'No camera found',
                     cameraInUse: 'Camera is in use by another application',
+                    webglNotSupported: 'WebGL is not available in this environment. Falling back to canvas rendering.',
+                    webglInitFailed: 'Failed to initialize WebGL. Falling back to canvas rendering.',
                     captureError: 'Failed to capture image'
                 },
                 footer: {

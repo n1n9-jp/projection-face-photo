@@ -19,6 +19,14 @@ class MapProjectionApp {
             this.renderer.initialize();
             this.inputHandler.initialize();
             this.uiControls.initialize();
+            
+            const webGLError = this.renderer.getWebGLError();
+            if (!this.renderer.supportsWebGL()) {
+                const messageKey = webGLError ? 'messages.webglInitFailed' : 'messages.webglNotSupported';
+                const level = webGLError ? 'warning' : 'info';
+                this.uiControls.showMessage(this.languageManager.t(messageKey), level);
+            }
+
             this.setupSampleManager();
 
             this.setupEventHandlers();

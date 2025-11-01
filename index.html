@@ -191,13 +191,14 @@
             </section>
         </aside>
 
-        <section class="canvas-container">
-            <div class="canvas-wrapper">
-                <svg id="map-svg" width="800" height="600"></svg>
-                <canvas id="image-canvas" width="800" height="600" style="display: none;"></canvas>
-            </div>
-            
-            <div class="loading" id="loading" style="display: none;">
+            <section class="canvas-container">
+                <div class="canvas-wrapper">
+                    <canvas id="webgl-canvas" width="800" height="600" style="display: none;"></canvas>
+                    <svg id="map-svg" width="800" height="600"></svg>
+                    <canvas id="image-canvas" width="800" height="600" style="display: none;"></canvas>
+                </div>
+                
+                <div class="loading" id="loading" style="display: none;">
                 <p data-i18n="loading.converting">変換中...</p>
                 <div class="progress-bar">
                     <div class="progress" id="progress"></div>
@@ -214,6 +215,7 @@
     <script src="js/language-manager.js"></script>
     <script src="js/projections.js"></script>
     <script src="js/input-handler.js"></script>
+    <script src="js/webgl-image-renderer.js"></script>
     <script src="js/renderer.js"></script>
     <script src="js/ui-controls.js"></script>
     <script src="js/sample-manager.js"></script>

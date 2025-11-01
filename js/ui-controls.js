@@ -177,6 +177,7 @@ class UIControls {
         
         if (this.projectionManager.setCurrentProjection(projectionName)) {
             this.updateProjectionInfo();
+            this.renderer.handleProjectionChange();
             this.debouncedUpdate();
         }
         
@@ -185,6 +186,7 @@ class UIControls {
 
     handleScaleChange(scale) {
         this.projectionManager.setScale(scale);
+        this.renderer.handleViewChange();
         this.debouncedUpdate();
     }
 
@@ -193,6 +195,7 @@ class UIControls {
         const rotationY = parseInt(document.getElementById('rotation-y').value);
         
         this.projectionManager.setRotation(rotationX, rotationY);
+        this.renderer.handleViewChange();
         this.debouncedUpdate();
     }
 
@@ -229,6 +232,7 @@ class UIControls {
         this.projectionManager.setRotation(0, 0);
         
         this.updateSliderValues();
+        this.renderer.handleViewChange();
         this.debouncedUpdate();
     }
 
