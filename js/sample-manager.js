@@ -6,6 +6,11 @@ class SampleManager {
         this.samples = {
             geojson: [
                 {
+                    filename: 'countries.json',
+                    path: 'samples/countries.json',
+                    key: 'countries'
+                },
+                {
                     filename: 'tissot-circles.geojson',
                     path: 'samples/tissot-circles.geojson',
                     key: 'tissot'

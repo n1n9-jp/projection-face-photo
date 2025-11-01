@@ -167,6 +167,10 @@ class LanguageManager {
                 },
                 sampleData: {
                     geojson: {
+                        countries: {
+                            name: '世界の国境',
+                            description: 'Natural Earthベースの国境GeoJSON（低解像度）'
+                        },
                         face: {
                             name: '顔 (Face)',
                             description: '人の顔を模したGeoJSONデータ'
@@ -385,6 +389,10 @@ class LanguageManager {
                 },
                 sampleData: {
                     geojson: {
+                        countries: {
+                            name: 'World Countries',
+                            description: 'Natural Earth inspired country boundaries (low-res GeoJSON)'
+                        },
                         face: {
                             name: 'Face',
                             description: 'GeoJSON data representing a human face'
