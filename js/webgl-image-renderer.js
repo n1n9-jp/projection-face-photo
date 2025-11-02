@@ -439,6 +439,55 @@ class WebGLImageRenderer {
         this.rotation.y = rotationY;
     }
 
+    captureFrameCanvas() {
+        if (!this.gl || !this.texture) {
+            return null;
+        }
+
+        const width = this.canvasSize.width;
+        const height = this.canvasSize.height;
+        const pixelBuffer = new Uint8Array(width * height * 4);
+
+        try {
+            // Ensure the latest frame is rendered before capturing
+            this.renderFrame(performance.now());
+
+            this.gl.readPixels(
+                0,
+                0,
+                width,
+                height,
+                this.gl.RGBA,
+                this.gl.UNSIGNED_BYTE,
+                pixelBuffer
+            );
+        } catch (error) {
+            console.warn('WebGL capture failed:', error);
+            return null;
+        }
+
+        const exportCanvas = document.createElement('canvas');
+        exportCanvas.width = width;
+        exportCanvas.height = height;
+
+        const exportCtx = exportCanvas.getContext('2d');
+        const imageData = exportCtx.createImageData(width, height);
+        const rowSize = width * 4;
+
+        // Flip vertical axis because WebGL's origin is bottom-left
+        for (let row = 0; row < height; row++) {
+            const srcStart = (height - 1 - row) * rowSize;
+            const destStart = row * rowSize;
+            imageData.data.set(
+                pixelBuffer.subarray(srcStart, srcStart + rowSize),
+                destStart
+            );
+        }
+
+        exportCtx.putImageData(imageData, 0, 0);
+        return exportCanvas;
+    }
+
     renderFrame(timestamp) {
         const gl = this.gl;
         if (!gl || !this.texture) {

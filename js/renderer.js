@@ -262,6 +262,62 @@ class Renderer {
         this.previousProjection = typeof projection.copy === 'function' ? projection.copy() : projection;
     }
 
+    renderGeoJSONToCanvas(context, projection, geoData) {
+        if (!context || !projection || !geoData) {
+            return;
+        }
+
+        context.save();
+        context.clearRect(0, 0, this.width, this.height);
+        context.fillStyle = '#f8f9fa';
+        context.fillRect(0, 0, this.width, this.height);
+
+        const path = d3.geoPath().projection(projection).context(context);
+        const sphere = { type: 'Sphere' };
+
+        // Draw sphere background
+        context.beginPath();
+        path(sphere);
+        context.fillStyle = '#e6f3ff';
+        context.fill();
+        context.lineWidth = 1;
+        context.strokeStyle = '#4a90e2';
+        context.stroke();
+
+        if (this.showGraticule) {
+            const graticule = this.geoGraticule();
+            const graticuleOutline = this.geoGraticule.outline();
+
+            // Graticule lines
+            context.beginPath();
+            path(graticule);
+            context.lineWidth = 1;
+            context.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+            context.stroke();
+
+            // Graticule outline
+            context.beginPath();
+            path(graticuleOutline);
+            context.lineWidth = 2;
+            context.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            context.stroke();
+        }
+
+        // Draw GeoJSON features
+        const features = this.extractGeoFeatures(geoData);
+        context.lineWidth = 1.5;
+        context.strokeStyle = '#2c5aa0';
+        context.fillStyle = 'rgba(0, 0, 0, 0)';
+
+        features.forEach(feature => {
+            context.beginPath();
+            path(feature);
+            context.stroke();
+        });
+
+        context.restore();
+    }
+
     async updateProjection() {
         if (this.currentData) {
             if (this.currentData.type === 'geojson') {
@@ -1110,34 +1166,44 @@ class Renderer {
         if (!this.currentData) return null;
 
         if (this.currentData.type === 'geojson') {
-            const svgData = new XMLSerializer().serializeToString(this.svg.node());
-            const canvas = document.createElement('canvas');
-            canvas.width = this.width;
-            canvas.height = this.height;
-            const ctx = canvas.getContext('2d');
-            
-            const img = new Image();
-            const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
-            const url = URL.createObjectURL(svgBlob);
-            
-            return new Promise((resolve) => {
-                img.onload = () => {
-                    ctx.drawImage(img, 0, 0);
-                    URL.revokeObjectURL(url);
-                    resolve(canvas.toDataURL('image/png'));
-                };
-                img.src = url;
-            });
+            const projection = this.projectionManager.configureProjection(
+                this.projectionManager.getCurrentProjection(),
+                this.width,
+                this.height
+            );
+
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = this.width;
+            exportCanvas.height = this.height;
+
+            const exportCtx = exportCanvas.getContext('2d');
+            this.renderGeoJSONToCanvas(exportCtx, projection, this.currentData.data);
+
+            return Promise.resolve(exportCanvas.toDataURL('image/png'));
         } else {
             if (this.webglEnabled && this.webglRenderer && this.webglCanvas) {
                 const exportCanvas = document.createElement('canvas');
                 exportCanvas.width = this.width;
                 exportCanvas.height = this.height;
                 const exportCtx = exportCanvas.getContext('2d');
-                exportCtx.drawImage(this.webglCanvas, 0, 0);
-                exportCtx.drawImage(this.canvas, 0, 0);
+
+                const capturedCanvas = typeof this.webglRenderer.captureFrameCanvas === 'function'
+                    ? this.webglRenderer.captureFrameCanvas()
+                    : null;
+
+                if (capturedCanvas) {
+                    exportCtx.drawImage(capturedCanvas, 0, 0);
+                } else {
+                    exportCtx.drawImage(this.webglCanvas, 0, 0);
+                }
+
+                if (this.showGraticule) {
+                    exportCtx.drawImage(this.canvas, 0, 0);
+                }
+
                 return Promise.resolve(exportCanvas.toDataURL('image/png'));
             }
+
             return Promise.resolve(this.canvas.toDataURL('image/png'));
         }
     }

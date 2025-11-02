@@ -335,7 +335,7 @@ class UIControls {
     }
 
     updateUIForDataType(dataType) {
-        if (dataType === 'image') {
+        if (dataType === 'image' || dataType === 'geojson') {
             this.addExportButton();
         }
     }
