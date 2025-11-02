@@ -312,13 +312,15 @@ class UIControls {
             try {
                 const dataURL = await this.renderer.exportImage();
                 if (dataURL) {
-                    const link = document.createElement('a');
-                    link.download = `projection-${this.projectionManager.currentProjection}-${Date.now()}.png`;
-                    link.href = dataURL;
-                    link.click();
-                    this.showMessage(this.languageManager.t('messages.imageExported'), 'info');
+                    const success = await this.saveImageFromDataURL(dataURL);
+                    if (success) {
+                        this.showMessage(this.languageManager.t('messages.imageExported'), 'info');
+                    } else {
+                        this.showMessage(this.languageManager.t('messages.exportFailed'), 'error');
+                    }
                 }
             } catch (error) {
+                console.error('Image export failed:', error);
                 this.showMessage(this.languageManager.t('messages.exportFailed'), 'error');
             }
         });
@@ -337,6 +339,116 @@ class UIControls {
     updateUIForDataType(dataType) {
         if (dataType === 'image' || dataType === 'geojson') {
             this.addExportButton();
+        }
+    }
+
+    getExportFilename() {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const projection = this.projectionManager.currentProjection || 'projection';
+        return `${projection}-${timestamp}.png`;
+    }
+
+    async saveImageFromDataURL(dataURL) {
+        if (!dataURL) {
+            return false;
+        }
+
+        try {
+            const blob = await this.convertDataURLToBlob(dataURL);
+            const filename = this.getExportFilename();
+            const file = this.createFileFromBlob(blob, filename);
+
+            if (this.supportsDownloadAttribute()) {
+                this.triggerBlobDownload(blob, filename);
+                return true;
+            }
+
+            if (file && this.canShareFile(file)) {
+                await navigator.share({
+                    files: [file],
+                    title: filename
+                });
+                return true;
+            }
+
+            this.openInNewTab(dataURL);
+            return true;
+        } catch (error) {
+            console.error('Failed to save image:', error);
+            this.openInNewTab(dataURL);
+            return false;
+        }
+    }
+
+    supportsDownloadAttribute() {
+        if (typeof navigator !== 'undefined') {
+            const ua = navigator.userAgent || '';
+            const isIOS = /iP(ad|hone|od)/i.test(ua);
+            if (isIOS) {
+                return false;
+            }
+        }
+
+        const anchor = document.createElement('a');
+        return typeof anchor.download !== 'undefined';
+    }
+
+    triggerBlobDownload(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        setTimeout(() => {
+            URL.revokeObjectURL(url);
+        }, 1000);
+    }
+
+    canShareFile(file) {
+        if (typeof navigator === 'undefined' || typeof navigator.canShare !== 'function') {
+            return false;
+        }
+
+        try {
+            return navigator.canShare({
+                files: [file]
+            });
+        } catch (error) {
+            return false;
+        }
+    }
+
+    openInNewTab(dataURL) {
+        const newWindow = window.open();
+        if (newWindow) {
+            newWindow.opener = null;
+            newWindow.location = dataURL;
+        } else {
+            window.location = dataURL;
+        }
+    }
+
+    async convertDataURLToBlob(dataURL) {
+        const response = await fetch(dataURL);
+        if (!response.ok) {
+            throw new Error('Failed to fetch data URL');
+        }
+        return await response.blob();
+    }
+
+    createFileFromBlob(blob, filename) {
+        if (typeof File === 'undefined') {
+            return null;
+        }
+
+        try {
+            return new File([blob], filename, { type: blob.type || 'image/png' });
+        } catch (error) {
+            return null;
         }
     }
 

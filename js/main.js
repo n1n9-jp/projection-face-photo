@@ -461,14 +461,16 @@ class MapProjectionApp {
         try {
             const dataURL = await this.renderer.exportImage();
             if (dataURL) {
-                const link = document.createElement('a');
-                link.download = `projection-${this.projectionManager.currentProjection}-${Date.now()}.png`;
-                link.href = dataURL;
-                link.click();
-                this.uiControls.showMessage('画像をエクスポートしました', 'info');
+                const success = await this.uiControls.saveImageFromDataURL(dataURL);
+                if (success) {
+                    this.uiControls.showMessage(this.languageManager.t('messages.imageExported'), 'info');
+                } else {
+                    this.uiControls.showMessage(this.languageManager.t('messages.exportFailed'), 'error');
+                }
             }
         } catch (error) {
-            this.uiControls.showMessage('エクスポートに失敗しました', 'error');
+            console.error('Export shortcut failed:', error);
+            this.uiControls.showMessage(this.languageManager.t('messages.exportFailed'), 'error');
         }
     }
 
