@@ -1,6 +1,7 @@
 class Renderer {
-    constructor(projectionManager) {
+    constructor(projectionManager, languageManager = null) {
         this.projectionManager = projectionManager;
+        this.languageManager = languageManager;
         this.svg = d3.select('#map-svg');
         this.canvas = document.getElementById('image-canvas');
         this.ctx = this.canvas.getContext('2d');
@@ -18,6 +19,7 @@ class Renderer {
         this.previousProjection = null;
         this.transitionDuration = 500;
         this.showGraticule = true;
+        this.showProjectionName = true;
         this.geoGroup = null;
         this.dataGroup = null;
         this.spherePath = null;
@@ -395,17 +397,21 @@ class Renderer {
         const outputImageData = this.ctx.createImageData(this.width, this.height);
 
         await this.transformImageWithProjection(
-            sourceImageData, 
-            outputImageData, 
+            sourceImageData,
+            outputImageData,
             projection,
             imageElement.width,
             imageElement.height
         );
 
         this.ctx.putImageData(outputImageData, 0, 0);
-        
+
         if (this.showGraticule) {
             this.drawGraticuleOnCanvas(projection);
+        }
+
+        if (this.showProjectionName) {
+            this.drawProjectionNameOnCanvas();
         }
     }
 
@@ -460,7 +466,7 @@ class Renderer {
 
         this.ctx.clearRect(0, 0, this.width, this.height);
 
-        if (!this.showGraticule) {
+        if (!this.showGraticule && !this.showProjectionName) {
             return;
         }
 
@@ -469,7 +475,14 @@ class Renderer {
             this.width,
             this.height
         );
-        this.drawGraticuleOnCanvas(projection);
+
+        if (this.showGraticule) {
+            this.drawGraticuleOnCanvas(projection);
+        }
+
+        if (this.showProjectionName) {
+            this.drawProjectionNameOnCanvas();
+        }
     }
 
     async transformImageWithProjection(sourceImageData, outputImageData, projection, sourceWidth, sourceHeight, showProgress = true) {
@@ -1110,7 +1123,7 @@ class Renderer {
     drawGraticuleOnCanvas(projection) {
         const graticule = d3.geoGraticule();
         const path = d3.geoPath().projection(projection).context(this.ctx);
-        
+
         this.ctx.beginPath();
         path(graticule.outline());
         this.ctx.strokeStyle = '#fff';
@@ -1118,7 +1131,7 @@ class Renderer {
         this.ctx.globalAlpha = 0.8;
         this.ctx.stroke();
         this.ctx.globalAlpha = 1.0;
-        
+
         this.ctx.beginPath();
         path(graticule());
         this.ctx.strokeStyle = '#fff';
@@ -1127,9 +1140,62 @@ class Renderer {
         this.ctx.stroke();
     }
 
+    drawProjectionNameOnCanvas() {
+        const projectionKey = this.projectionManager.currentProjection;
+
+        // LanguageManagerから投影法名を取得（日本語）
+        let projectionName = projectionKey;
+        if (this.languageManager) {
+            projectionName = this.languageManager.t(`projections.${projectionKey}.name`);
+        }
+
+        this.ctx.save();
+        this.ctx.font = 'bold 16px "Noto Sans JP", "Hiragino Sans", sans-serif';
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 1.0)';
+        this.ctx.strokeStyle = 'rgba(0, 0, 0, 1.0)';
+        this.ctx.lineWidth = 4;
+
+        const textMetrics = this.ctx.measureText(projectionName);
+        const textWidth = textMetrics.width;
+        const padding = 10;
+
+        const x = this.width - textWidth - padding - 10;
+        const y = this.height - padding - 5;
+
+        this.ctx.strokeText(projectionName, x, y);
+        this.ctx.fillText(projectionName, x, y);
+        this.ctx.restore();
+    }
+
     setGraticuleVisibility(visible) {
         this.showGraticule = visible;
         this.updateGraticuleVisibility();
+
+        if (this.currentData) {
+            if (this.currentData.type === 'image') {
+                if (this.webglEnabled && this.webglRenderer) {
+                    this.markOverlayDirty();
+                    const transitionActive = typeof this.webglRenderer.isTransitionActive === 'function'
+                        ? this.webglRenderer.isTransitionActive()
+                        : false;
+                    if (!transitionActive) {
+                        this.refreshOverlay();
+                        this.overlayNeedsUpdate = false;
+                    }
+                } else {
+                    const projection = this.projectionManager.configureProjection(
+                        this.projectionManager.getCurrentProjection(),
+                        this.width,
+                        this.height
+                    );
+                    this.renderImageDirect(this.currentData.data, projection);
+                }
+            }
+        }
+    }
+
+    setProjectionNameVisibility(visible) {
+        this.showProjectionName = visible;
 
         if (this.currentData) {
             if (this.currentData.type === 'image') {
@@ -1179,6 +1245,14 @@ class Renderer {
             const exportCtx = exportCanvas.getContext('2d');
             this.renderGeoJSONToCanvas(exportCtx, projection, this.currentData.data);
 
+            // 投影法を表示する場合、エクスポート用キャンバスに描画
+            if (this.showProjectionName) {
+                const tempCtx = this.ctx;
+                this.ctx = exportCtx;
+                this.drawProjectionNameOnCanvas();
+                this.ctx = tempCtx;
+            }
+
             return Promise.resolve(exportCanvas.toDataURL('image/png'));
         } else {
             if (this.webglEnabled && this.webglRenderer && this.webglCanvas) {
@@ -1199,6 +1273,14 @@ class Renderer {
 
                 if (this.showGraticule) {
                     exportCtx.drawImage(this.canvas, 0, 0);
+                }
+
+                // 投影法を表示する場合、エクスポート用キャンバスに描画
+                if (this.showProjectionName) {
+                    const tempCtx = this.ctx;
+                    this.ctx = exportCtx;
+                    this.drawProjectionNameOnCanvas();
+                    this.ctx = tempCtx;
                 }
 
                 return Promise.resolve(exportCanvas.toDataURL('image/png'));

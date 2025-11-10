@@ -53,6 +53,7 @@ class LanguageManager {
                 controlSection: {
                     title: '表示設定',
                     showGraticule: '緯度経度線を表示',
+                    showProjectionName: '投影法を表示',
                     scale: 'スケール:',
                     rotationX: '回転 (経度):',
                     rotationY: '回転 (緯度):',
@@ -277,6 +278,7 @@ class LanguageManager {
                 controlSection: {
                     title: 'Display Settings',
                     showGraticule: 'Show graticule',
+                    showProjectionName: 'Show projection name',
                     scale: 'Scale:',
                     rotationX: 'Rotation (Longitude):',
                     rotationY: 'Rotation (Latitude):',

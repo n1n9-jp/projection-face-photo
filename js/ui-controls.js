@@ -64,6 +64,7 @@ class UIControls {
         const rotationXSlider = document.getElementById('rotation-x');
         const rotationYSlider = document.getElementById('rotation-y');
         const graticuleCheckbox = document.getElementById('show-graticule');
+        const projectionNameCheckbox = document.getElementById('show-projection-name');
 
         const scaleValue = document.getElementById('scale-value');
         const rotationXValue = document.getElementById('rotation-x-value');
@@ -89,6 +90,10 @@ class UIControls {
 
         graticuleCheckbox.addEventListener('change', (event) => {
             this.handleGraticuleChange(event.target.checked);
+        });
+
+        projectionNameCheckbox.addEventListener('change', (event) => {
+            this.handleProjectionNameChange(event.target.checked);
         });
 
         this.updateSliderValues();
@@ -201,6 +206,10 @@ class UIControls {
 
     handleGraticuleChange(visible) {
         this.renderer.setGraticuleVisibility(visible);
+    }
+
+    handleProjectionNameChange(visible) {
+        this.renderer.setProjectionNameVisibility(visible);
     }
 
     debouncedUpdate() {
