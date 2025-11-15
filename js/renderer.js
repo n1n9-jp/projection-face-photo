@@ -116,8 +116,7 @@ class Renderer {
             this.webglRenderer.setProjection(this.projectionManager.currentProjection);
             this.webglRenderer.setView(
                 this.projectionManager.currentScale,
-                this.projectionManager.currentRotation[0],
-                this.projectionManager.currentRotation[1]
+                this.projectionManager.getRotationMatrix()
             );
             this.webglEnabled = true;
             this.webglCanvas.style.display = 'none';
@@ -341,8 +340,7 @@ class Renderer {
         if (this.webglEnabled && this.webglRenderer && this.currentData && this.currentData.type === 'image') {
             this.webglRenderer.setView(
                 this.projectionManager.currentScale,
-                this.projectionManager.currentRotation[0],
-                this.projectionManager.currentRotation[1]
+                this.projectionManager.getRotationMatrix()
             );
             this.markOverlayDirty();
             this.refreshOverlay();
@@ -363,8 +361,7 @@ class Renderer {
             this.webglRenderer.setProjection(this.projectionManager.currentProjection);
             this.webglRenderer.setView(
                 this.projectionManager.currentScale,
-                this.projectionManager.currentRotation[0],
-                this.projectionManager.currentRotation[1]
+                this.projectionManager.getRotationMatrix()
             );
             this.showWebGL();
             this.markOverlayDirty();
@@ -1121,16 +1118,20 @@ class Renderer {
     }
 
     drawGraticuleOnCanvas(projection) {
-        const graticule = d3.geoGraticule();
-        const path = d3.geoPath().projection(projection).context(this.ctx);
+        if (!this.ctx) {
+            return;
+        }
 
+        const path = d3.geoPath().projection(projection).context(this.ctx);
+        const graticule = this.geoGraticule || d3.geoGraticule();
+        const sphere = { type: 'Sphere' };
+
+        this.ctx.save();
+
+        // Clip graticule lines to the visible sphere to prevent overshoot
         this.ctx.beginPath();
-        path(graticule.outline());
-        this.ctx.strokeStyle = '#fff';
-        this.ctx.lineWidth = 2;
-        this.ctx.globalAlpha = 0.8;
-        this.ctx.stroke();
-        this.ctx.globalAlpha = 1.0;
+        path(sphere);
+        this.ctx.clip();
 
         this.ctx.beginPath();
         path(graticule());
@@ -1138,6 +1139,17 @@ class Renderer {
         this.ctx.lineWidth = 1;
         this.ctx.globalAlpha = 0.7;
         this.ctx.stroke();
+
+        this.ctx.restore();
+
+        // Draw sphere outline last so it sits on top
+        this.ctx.beginPath();
+        path(sphere);
+        this.ctx.strokeStyle = '#fff';
+        this.ctx.lineWidth = 2;
+        this.ctx.globalAlpha = 0.9;
+        this.ctx.stroke();
+        this.ctx.globalAlpha = 1.0;
     }
 
     drawProjectionNameOnCanvas() {

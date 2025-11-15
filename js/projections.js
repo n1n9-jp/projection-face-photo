@@ -4,6 +4,7 @@ class ProjectionManager {
         this.currentProjection = 'mercator';
         this.currentScale = 150;
         this.currentRotation = [0, 0];
+        this.rotationMatrixCache = null;
     }
 
     initializeProjections() {
@@ -92,6 +93,7 @@ class ProjectionManager {
 
     setRotation(longitude, latitude) {
         this.currentRotation = [longitude, latitude];
+        this.rotationMatrixCache = null;
     }
 
     configureProjection(projection, width, height) {
@@ -99,6 +101,50 @@ class ProjectionManager {
             .scale(this.currentScale)
             .rotate(this.currentRotation)
             .translate([width / 2, height / 2]);
+    }
+
+    getRotationMatrix() {
+        if (this.rotationMatrixCache) {
+            return this.rotationMatrixCache;
+        }
+
+        if (typeof d3 === 'undefined' || typeof d3.geoRotation !== 'function') {
+            this.rotationMatrixCache = new Float32Array([
+                1, 0, 0,
+                0, 1, 0,
+                0, 0, 1
+            ]);
+            return this.rotationMatrixCache;
+        }
+
+        const rotation = d3.geoRotation(this.currentRotation);
+        const basis = [
+            rotation([0, 0]),
+            rotation([90, 0]),
+            rotation([0, 90])
+        ];
+
+        const vectors = basis.map(([lon, lat]) => this.lonLatToCartesian(lon, lat));
+
+        this.rotationMatrixCache = new Float32Array([
+            vectors[0][0], vectors[0][1], vectors[0][2],
+            vectors[1][0], vectors[1][1], vectors[1][2],
+            vectors[2][0], vectors[2][1], vectors[2][2]
+        ]);
+
+        return this.rotationMatrixCache;
+    }
+
+    lonLatToCartesian(longitude, latitude) {
+        const rad = Math.PI / 180;
+        const lambda = longitude * rad;
+        const phi = latitude * rad;
+        const cosPhi = Math.cos(phi);
+        return [
+            cosPhi * Math.cos(lambda),
+            cosPhi * Math.sin(lambda),
+            Math.sin(phi)
+        ];
     }
 
     getAvailableProjections() {

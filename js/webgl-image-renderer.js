@@ -18,10 +18,11 @@ class WebGLImageRenderer {
         this.transitionDuration = 1200;
 
         this.scale = projectionManager.currentScale;
-        this.rotation = {
-            x: projectionManager.currentRotation[0],
-            y: projectionManager.currentRotation[1]
-        };
+        this.rotationMatrix = projectionManager.getRotationMatrix() || new Float32Array([
+            1, 0, 0,
+            0, 1, 0,
+            0, 0, 1
+        ]);
         this.canvasSize = {
             width: canvas.width,
             height: canvas.height
@@ -95,8 +96,7 @@ class WebGLImageRenderer {
             previousProjectionType: gl.getUniformLocation(this.program, 'uPreviousProjectionType'),
             transitionProgress: gl.getUniformLocation(this.program, 'uTransitionProgress'),
             scale: gl.getUniformLocation(this.program, 'uScale'),
-            rotationX: gl.getUniformLocation(this.program, 'uRotationX'),
-            rotationY: gl.getUniformLocation(this.program, 'uRotationY'),
+            rotationMatrix: gl.getUniformLocation(this.program, 'uRotationMatrix'),
             canvasSize: gl.getUniformLocation(this.program, 'uCanvasSize'),
             texture: gl.getUniformLocation(this.program, 'uTexture')
         };
@@ -141,8 +141,7 @@ class WebGLImageRenderer {
             uniform int uPreviousProjectionType;
             uniform float uTransitionProgress;
             uniform float uScale;
-            uniform float uRotationX;
-            uniform float uRotationY;
+            uniform mat3 uRotationMatrix;
             uniform vec2 uCanvasSize;
 
             in vec2 vTexCoord;
@@ -284,12 +283,30 @@ class WebGLImageRenderer {
                 return inverseMercator(uv);
             }
 
-            vec2 applyRotation(vec2 lonLat, float rotX, float rotY) {
-                float lon = lonLat.x + rotX;
-                float lat = lonLat.y + rotY;
-                lon = mod(lon + 180.0, 360.0) - 180.0;
-                lat = clamp(lat, -90.0, 90.0);
-                return vec2(lon, lat);
+            vec3 lonLatToVector(vec2 lonLat) {
+                float lonRad = radians(lonLat.x);
+                float latRad = radians(lonLat.y);
+                float cosLat = cos(latRad);
+                return vec3(
+                    cosLat * cos(lonRad),
+                    cosLat * sin(lonRad),
+                    sin(latRad)
+                );
+            }
+
+            vec2 vectorToLonLat(vec3 vector) {
+                float lon = atan(vector.y, vector.x);
+                float lat = asinSafe(clamp(vector.z, -1.0, 1.0));
+                return vec2(
+                    lon * 180.0 / PI,
+                    lat * 180.0 / PI
+                );
+            }
+
+            vec2 applyRotation(vec2 lonLat) {
+                vec3 cartesian = lonLatToVector(lonLat);
+                vec3 rotated = uRotationMatrix * cartesian;
+                return vectorToLonLat(rotated);
             }
 
             vec2 lonLatToTexture(vec2 lonLat) {
@@ -306,7 +323,7 @@ class WebGLImageRenderer {
             }
 
             vec4 sampleFromLonLat(vec2 lonLat) {
-                vec2 rotated = applyRotation(lonLat, uRotationX, uRotationY);
+                vec2 rotated = applyRotation(lonLat);
                 vec2 texCoord = lonLatToTexture(rotated);
                 return sampleTexture(texCoord);
             }
@@ -433,10 +450,17 @@ class WebGLImageRenderer {
         this.transitionStart = performance.now();
     }
 
-    setView(scale, rotationX, rotationY) {
+    setView(scale, rotationMatrix = null) {
         this.scale = scale;
-        this.rotation.x = rotationX;
-        this.rotation.y = rotationY;
+        if (rotationMatrix instanceof Float32Array && rotationMatrix.length === 9) {
+            this.rotationMatrix = rotationMatrix;
+        } else {
+            this.rotationMatrix = new Float32Array([
+                1, 0, 0,
+                0, 1, 0,
+                0, 0, 1
+            ]);
+        }
     }
 
     captureFrameCanvas() {
@@ -518,8 +542,9 @@ class WebGLImageRenderer {
         gl.uniform1i(this.uniformLocations.previousProjectionType, previousIndex);
         gl.uniform1f(this.uniformLocations.transitionProgress, transitionProgress);
         gl.uniform1f(this.uniformLocations.scale, Math.max(this.scale, 1.0));
-        gl.uniform1f(this.uniformLocations.rotationX, this.rotation.x);
-        gl.uniform1f(this.uniformLocations.rotationY, this.rotation.y);
+        if (this.uniformLocations.rotationMatrix) {
+            gl.uniformMatrix3fv(this.uniformLocations.rotationMatrix, false, this.rotationMatrix);
+        }
         gl.uniform2f(this.uniformLocations.canvasSize, this.canvasSize.width, this.canvasSize.height);
         gl.uniform1i(this.uniformLocations.texture, 0);
 
