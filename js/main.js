@@ -9,6 +9,11 @@ class MapProjectionApp {
 
         this.isInitialized = false;
         this.sampleUIInitialized = false;
+        this.isFullscreenActive = false;
+        this.fullscreenElement = null;
+        this.currentDataType = null;
+        this.fullscreenChangeHandler = null;
+        this.fullscreenHintTimeout = null;
     }
 
     async initialize() {
@@ -19,6 +24,11 @@ class MapProjectionApp {
             this.renderer.initialize();
             this.inputHandler.initialize();
             this.uiControls.initialize();
+            this.uiControls.setFullscreenHandler(() => {
+                this.toggleFullscreen();
+            });
+            this.uiControls.setFullscreenAvailability(false);
+            this.setupFullscreenListeners();
             
             const webGLError = this.renderer.getWebGLError();
             if (!this.renderer.supportsWebGL()) {
@@ -112,6 +122,23 @@ class MapProjectionApp {
 
     setupKeyboardShortcuts() {
         document.addEventListener('keydown', (event) => {
+            if (this.isFullscreenActive) {
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    this.hideFullscreenHint();
+                    this.exitFullscreen();
+                    return;
+                }
+
+                if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+                    event.preventDefault();
+                    this.hideFullscreenHint();
+                    const direction = event.key === 'ArrowRight' ? 1 : -1;
+                    this.cycleProjection(direction);
+                    return;
+                }
+            }
+
             if (event.ctrlKey || event.metaKey) {
                 switch (event.key) {
                     case 'r':
@@ -357,6 +384,7 @@ class MapProjectionApp {
     async handleDataLoaded(data) {
         try {
             console.log('Data loaded:', data.type, data.filename);
+            this.currentDataType = data.type;
             
             // サンプルからの読み込みでない場合は選択状態をクリア
             if (!data.isSample) {
@@ -375,6 +403,7 @@ class MapProjectionApp {
 
             this.addDataInfo(data);
             this.uiControls.applyDataLoadedAccordionState();
+            this.updateFullscreenAvailability(data.type);
             
         } catch (error) {
             console.error('Render error:', error);
@@ -452,6 +481,174 @@ class MapProjectionApp {
         }
     }
 
+    updateFullscreenAvailability(dataType = null) {
+        const targetType = dataType || this.currentDataType;
+        const canUseFullscreen = targetType === 'image' && this.isFullscreenSupported();
+        this.uiControls.setFullscreenAvailability(canUseFullscreen);
+        if (!canUseFullscreen && this.isFullscreenActive) {
+            this.exitFullscreen();
+        }
+    }
+
+    toggleFullscreen() {
+        if (this.isFullscreenActive) {
+            this.exitFullscreen();
+        } else {
+            this.enterFullscreen();
+        }
+    }
+
+    async enterFullscreen() {
+        if (!this.isFullscreenSupported() || this.isFullscreenActive) {
+            return;
+        }
+
+        const wrapper = document.querySelector('.canvas-wrapper');
+        if (!wrapper) {
+            return;
+        }
+
+        this.fullscreenElement = wrapper;
+        try {
+            const request = wrapper.requestFullscreen?.() ||
+                wrapper.webkitRequestFullscreen?.() ||
+                wrapper.mozRequestFullScreen?.() ||
+                wrapper.msRequestFullscreen?.();
+            if (request instanceof Promise) {
+                await request;
+            }
+        } catch (error) {
+            console.error('Failed to enter fullscreen:', error);
+        }
+    }
+
+    async exitFullscreen() {
+        this.hideFullscreenHint();
+        const activeElement = this.getFullscreenElement();
+        if (!activeElement) {
+            this.isFullscreenActive = false;
+            this.fullscreenElement = null;
+            document.body.classList.remove('fullscreen-active');
+            this.uiControls.setFullscreenState(false);
+            return;
+        }
+
+        try {
+            const exit = document.exitFullscreen?.() ||
+                document.webkitExitFullscreen?.() ||
+                document.mozCancelFullScreen?.() ||
+                document.msExitFullscreen?.();
+            if (exit instanceof Promise) {
+                await exit;
+            }
+        } catch (error) {
+            console.error('Failed to exit fullscreen:', error);
+        }
+    }
+
+    setupFullscreenListeners() {
+        if (typeof document === 'undefined') {
+            return;
+        }
+
+        this.fullscreenChangeHandler = () => this.handleFullscreenChange();
+        ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange']
+            .forEach(eventName => {
+                document.addEventListener(eventName, this.fullscreenChangeHandler);
+            });
+    }
+
+    handleFullscreenChange() {
+        const activeElement = this.getFullscreenElement();
+        const isActive = Boolean(activeElement && this.fullscreenElement && activeElement === this.fullscreenElement);
+        this.isFullscreenActive = isActive;
+        document.body.classList.toggle('fullscreen-active', isActive);
+        this.uiControls.setFullscreenState(isActive);
+
+        if (!isActive) {
+            this.fullscreenElement = null;
+            this.hideFullscreenHint();
+        } else {
+            this.showFullscreenHint();
+        }
+
+        this.handleWindowResize();
+    }
+
+    getFullscreenElement() {
+        if (typeof document === 'undefined') {
+            return null;
+        }
+
+        return document.fullscreenElement ||
+            document.webkitFullscreenElement ||
+            document.mozFullScreenElement ||
+            document.msFullscreenElement ||
+            null;
+    }
+
+    isFullscreenSupported() {
+        if (typeof document === 'undefined') {
+            return false;
+        }
+
+        return Boolean(
+            document.fullscreenEnabled ||
+            document.webkitFullscreenEnabled ||
+            document.mozFullScreenEnabled ||
+            document.msFullscreenEnabled
+        );
+    }
+
+    cycleProjection(direction) {
+        const selector = document.getElementById('projection-select');
+        if (!selector) {
+            return;
+        }
+
+        const options = Array.from(selector.options).filter(option => !option.disabled);
+        if (options.length === 0) {
+            return;
+        }
+
+        const currentValue = this.projectionManager.currentProjection;
+        let currentIndex = options.findIndex(option => option.value === currentValue);
+        if (currentIndex === -1) {
+            currentIndex = 0;
+        }
+
+        const nextIndex = (currentIndex + direction + options.length) % options.length;
+        const nextValue = options[nextIndex].value;
+        if (nextValue !== currentValue) {
+            this.uiControls.setProjection(nextValue);
+        }
+    }
+
+    showFullscreenHint() {
+        const hint = document.getElementById('fullscreen-hint');
+        if (!hint) {
+            return;
+        }
+        hint.style.display = 'flex';
+        if (this.fullscreenHintTimeout) {
+            clearTimeout(this.fullscreenHintTimeout);
+        }
+        this.fullscreenHintTimeout = setTimeout(() => {
+            this.hideFullscreenHint();
+        }, 5000);
+    }
+
+    hideFullscreenHint() {
+        if (this.fullscreenHintTimeout) {
+            clearTimeout(this.fullscreenHintTimeout);
+            this.fullscreenHintTimeout = null;
+        }
+        const hint = document.getElementById('fullscreen-hint');
+        if (hint) {
+            hint.style.display = 'none';
+        }
+    }
+
     resetProjection() {
         this.uiControls.resetControls();
         this.uiControls.showMessage('投影設定をリセットしました', 'info');
@@ -475,6 +672,10 @@ class MapProjectionApp {
     }
 
     clearData() {
+        if (this.isFullscreenActive) {
+            this.exitFullscreen();
+        }
+
         // Webカムを停止
         if (this.inputHandler.isWebcamActive()) {
             this.stopWebcam();
@@ -486,12 +687,30 @@ class MapProjectionApp {
         this.clearSampleSelection();
         this.uiControls.resetDataInfo();
         this.uiControls.applyInitialAccordionState();
+        this.currentDataType = null;
+        this.updateFullscreenAvailability(null);
 
         this.uiControls.showMessage('データをクリアしました', 'info');
     }
 
     handleWindowResize() {
+        if (this.isFullscreenActive) {
+            const fullscreenWidth = window.innerWidth;
+            const fullscreenHeight = window.innerHeight;
+            if (fullscreenWidth !== this.renderer.width || fullscreenHeight !== this.renderer.height) {
+                this.renderer.setDimensions(fullscreenWidth, fullscreenHeight);
+                
+                if (this.renderer.currentData) {
+                    this.renderer.updateProjection();
+                }
+            }
+            return;
+        }
+
         const container = document.querySelector('.canvas-container');
+        if (!container) {
+            return;
+        }
         const containerRect = container.getBoundingClientRect();
         
         const maxWidth = Math.min(containerRect.width - 48, 800);
@@ -500,7 +719,7 @@ class MapProjectionApp {
         if (maxWidth !== this.renderer.width || maxHeight !== this.renderer.height) {
             this.renderer.setDimensions(maxWidth, maxHeight);
             
-            if (this.inputHandler.hasData()) {
+            if (this.renderer.currentData) {
                 this.renderer.updateProjection();
             }
         }

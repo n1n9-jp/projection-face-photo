@@ -203,8 +203,17 @@
                     <canvas id="webgl-canvas" width="800" height="600" style="display: none;"></canvas>
                     <svg id="map-svg" width="800" height="600"></svg>
                     <canvas id="image-canvas" width="800" height="600" style="display: none;"></canvas>
+                    <div id="fullscreen-hint" class="fullscreen-hint" style="display: none;">
+                        <div class="fullscreen-hint-content">
+                            <p data-i18n="canvasSection.controlsHint.projection">左右キーで投影法を変更できます</p>
+                            <p data-i18n="canvasSection.controlsHint.exit">ESCキーでフルスクリーンを終了できます</p>
+                        </div>
+                    </div>
                 </div>
-                
+                <div class="canvas-actions">
+                    <button id="fullscreen-button" class="canvas-action-button" data-i18n="canvasSection.fullscreen" style="display: none;">フルスクリーン</button>
+                </div>
+
                 <div class="loading" id="loading" style="display: none;">
                 <p data-i18n="loading.converting">変換中...</p>
                 <div class="progress-bar">

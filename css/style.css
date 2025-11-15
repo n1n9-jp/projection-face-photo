@@ -558,6 +558,81 @@ body {
     border-radius: 5px;
 }
 
+.canvas-actions {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.25rem;
+}
+
+.canvas-action-button {
+    padding: 0.65rem 1.5rem;
+    border: none;
+    border-radius: 999px;
+    background: #667eea;
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.canvas-action-button:hover {
+    background: #5a67d8;
+}
+
+.canvas-action-button.is-active {
+    background: #2563eb;
+}
+
+.canvas-wrapper:fullscreen,
+.canvas-wrapper:-webkit-full-screen {
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+    min-height: 100vh;
+}
+
+.canvas-wrapper:fullscreen svg,
+.canvas-wrapper:fullscreen canvas,
+.canvas-wrapper:-webkit-full-screen svg,
+.canvas-wrapper:-webkit-full-screen canvas {
+    border-radius: 0;
+    border: none;
+}
+
+.fullscreen-hint {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 20;
+}
+
+.fullscreen-hint-content {
+    background: rgba(17, 24, 39, 0.9);
+    color: #fff;
+    padding: 1.5rem 2rem;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+.fullscreen-hint-content p {
+    margin: 0.25rem 0;
+    font-weight: 500;
+}
+
+body.fullscreen-active {
+    background: #000;
+    overflow: hidden;
+}
+
 #map-svg {
     background: white;
 }

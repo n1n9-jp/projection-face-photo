@@ -7,6 +7,8 @@ class UIControls {
         this.debounceTimeout = null;
         this.accordionSections = [];
         this.accordionState = {};
+        this.fullscreenHandler = null;
+        this.fullscreenButton = null;
     }
 
     initialize() {
@@ -15,6 +17,7 @@ class UIControls {
         this.setupProjectionInfo();
         this.updateProjectionInfo();
         this.initializeAccordion();
+        this.setupFullscreenButton();
     }
 
     setupProjectionSelector() {
@@ -228,6 +231,37 @@ class UIControls {
         this.handleProjectionChange(projectionName);
     }
 
+    setupFullscreenButton() {
+        this.fullscreenButton = document.getElementById('fullscreen-button');
+        if (!this.fullscreenButton) {
+            return;
+        }
+
+        this.fullscreenButton.addEventListener('click', () => {
+            if (typeof this.fullscreenHandler === 'function') {
+                this.fullscreenHandler();
+            }
+        });
+    }
+
+    setFullscreenHandler(handler) {
+        this.fullscreenHandler = handler;
+    }
+
+    setFullscreenAvailability(isVisible) {
+        if (!this.fullscreenButton) {
+            return;
+        }
+        this.fullscreenButton.style.display = isVisible ? 'inline-flex' : 'none';
+    }
+
+    setFullscreenState(isActive) {
+        if (!this.fullscreenButton) {
+            return;
+        }
+        this.fullscreenButton.classList.toggle('is-active', Boolean(isActive));
+    }
+
     resetControls() {
         const scaleSlider = document.getElementById('scale-slider');
         const rotationXSlider = document.getElementById('rotation-x');
@@ -299,23 +333,18 @@ class UIControls {
     addExportButton() {
         const canvasContainer = document.querySelector('.canvas-container');
         
+        const actionContainer = canvasContainer.querySelector('.canvas-actions');
+        if (!actionContainer) {
+            return;
+        }
+
         const existingButton = document.getElementById('export-button');
         if (existingButton) return;
 
         const exportButton = document.createElement('button');
         exportButton.id = 'export-button';
+        exportButton.className = 'canvas-action-button';
         exportButton.textContent = this.languageManager.t('controlSection.exportImage');
-        exportButton.style.cssText = `
-            margin-top: 20px;
-            padding: 10px 20px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background 0.3s ease;
-        `;
 
         exportButton.addEventListener('click', async () => {
             try {
@@ -334,15 +363,7 @@ class UIControls {
             }
         });
 
-        exportButton.addEventListener('mouseover', () => {
-            exportButton.style.background = '#5a67d8';
-        });
-
-        exportButton.addEventListener('mouseout', () => {
-            exportButton.style.background = '#667eea';
-        });
-
-        canvasContainer.appendChild(exportButton);
+        actionContainer.appendChild(exportButton);
     }
 
     updateUIForDataType(dataType) {

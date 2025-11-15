@@ -230,6 +230,13 @@ class LanguageManager {
                 loading: {
                     converting: '変換中...'
                 },
+                canvasSection: {
+                    fullscreen: 'フルスクリーン',
+                    controlsHint: {
+                        projection: '左右キーで投影法を変更できます',
+                        exit: 'ESCキーでフルスクリーンを終了できます'
+                    }
+                },
                 language: {
                     label: '言語:'
                 }
@@ -454,6 +461,13 @@ class LanguageManager {
                 },
                 loading: {
                     converting: 'Converting...'
+                },
+                canvasSection: {
+                    fullscreen: 'Fullscreen',
+                    controlsHint: {
+                        projection: 'Use left/right keys to change projections',
+                        exit: 'Press ESC to exit fullscreen'
+                    }
                 },
                 language: {
                     label: 'Language:'
