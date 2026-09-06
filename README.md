@@ -27,18 +27,26 @@
 ## アーキテクチャ
 
 ```
-src/
-├── index.html          # メインHTML
+.
+├── index.html                 # メインHTML
 ├── js/
-│   ├── main.js         # アプリケーションエントリーポイント
-│   ├── projections.js  # 投影法定義・管理
-│   ├── input-handler.js # GeoJSON/PNG入力処理
-│   ├── renderer.js     # 描画エンジン
-│   └── ui-controls.js  # UI制御
+│   ├── image-utils.js         # 画像スケール / iOS 判定
+│   ├── language-manager.js    # 日英 UI 文言
+│   ├── projections.js         # 投影法定義・管理
+│   ├── input-handler.js       # GeoJSON / PNG / Webカム入力
+│   ├── webgl-image-renderer.js # 画像の WebGL 再投影
+│   ├── renderer.js            # SVG / Canvas 描画エンジン
+│   ├── ui-controls.js         # UI 制御
+│   ├── sample-manager.js      # サンプルデータ読込
+│   └── main.js                # アプリケーションエントリーポイント
 ├── css/
-│   └── style.css       # スタイル
-└── data/
-    └── sample.geojson  # サンプルGeoJSON
+│   └── style.css              # スタイル
+└── samples/
+    ├── countries.json         # 世界の国境 GeoJSON
+    ├── face.geojson           # 顔の GeoJSON
+    ├── tissot-circles.geojson # ティソーの指示楕円
+    ├── self.png               # 画像サンプル
+    └── lena.png               # 画像サンプル
 ```
 
 ## 対応投影法

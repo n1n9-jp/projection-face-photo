@@ -32,12 +32,7 @@ class WebGLImageRenderer {
     }
 
     buildProjectionIndexMap(projectionManager) {
-        const projections = projectionManager.getAvailableProjections();
-        const map = new Map();
-        projections.forEach((proj, index) => {
-            map.set(proj.key, index);
-        });
-        return map;
+        return projectionManager.getProjectionIndexMap();
     }
 
     initializeGL() {
@@ -268,7 +263,33 @@ class WebGLImageRenderer {
             }
 
             vec2 inverseNaturalEarth(vec2 uv) {
-                return inverseEqualEarth(uv);
+                vec2 plane = toPlane(uv);
+                float x = plane.x;
+                float y = plane.y;
+                float phi = y;
+                const float EPS = 1e-6;
+
+                for (int i = 0; i < 25; i++) {
+                    float phi2 = phi * phi;
+                    float phi4 = phi2 * phi2;
+                    float f = phi * (1.007226 + phi2 * (0.015085 + phi4 * (-0.044475 + 0.028874 * phi2 - 0.005916 * phi4))) - y;
+                    float fprime = 1.007226 + phi2 * (0.015085 * 3.0 + phi4 * (-0.044475 * 7.0 + 0.028874 * 9.0 * phi2 - 0.005916 * 11.0 * phi4));
+                    float delta = f / fprime;
+                    phi -= delta;
+                    if (abs(delta) <= EPS) {
+                        break;
+                    }
+                }
+
+                float phi2 = phi * phi;
+                float denom = 0.8707 + phi2 * (-0.131979 + phi2 * (-0.013791 + phi2 * phi2 * phi2 * (0.003971 - 0.001529 * phi2)));
+                if (abs(denom) < 1e-8 || abs(phi) > HALF_PI + 0.1) {
+                    return vec2(1e9);
+                }
+
+                float lon = (x / denom) * 180.0 / PI;
+                float lat = phi * 180.0 / PI;
+                return vec2(lon, lat);
             }
 
             vec2 getInverseProjection(int projectionType, vec2 uv) {
@@ -587,8 +608,4 @@ class WebGLImageRenderer {
 
 if (typeof window !== 'undefined') {
     window.WebGLImageRenderer = WebGLImageRenderer;
-}
-
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = WebGLImageRenderer;
 }

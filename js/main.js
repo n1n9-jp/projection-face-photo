@@ -52,7 +52,7 @@ class MapProjectionApp {
             this.showWelcomeMessage();
         } catch (error) {
             console.error('Initialization error:', error);
-            this.showError('アプリケーションの初期化に失敗しました: ' + error.message);
+            this.showError(`${this.languageManager.t('messages.initFailed')}: ${error.message}`);
         }
     }
 
@@ -71,6 +71,8 @@ class MapProjectionApp {
     }
 
     updateAllUIText() {
+        document.title = this.languageManager.t('header.title');
+
         document.querySelectorAll('[data-i18n]').forEach(element => {
             const key = element.dataset.i18n;
             const translation = this.languageManager.t(key);
@@ -83,6 +85,11 @@ class MapProjectionApp {
         this.uiControls.populateProjectionOptions();
         this.uiControls.updateProjectionInfo();
         this.setupSampleUI();
+        this.syncWebcamButtonLabel();
+        this.inputHandler.refreshFileInfoDisplay();
+        if (this.inputHandler.availableCameras.length > 0) {
+            this.inputHandler.populateCameraSelect();
+        }
 
         const exportButton = document.getElementById('export-button');
         if (exportButton) {
@@ -96,7 +103,7 @@ class MapProjectionApp {
         });
 
         this.inputHandler.onError((error) => {
-            this.uiControls.showMessage('入力エラー: ' + error, 'error');
+            this.uiControls.showMessage(`${this.languageManager.t('messages.inputError')} ${error}`, 'error');
         });
 
         this.inputHandler.onProgress((percentage) => {
@@ -115,7 +122,7 @@ class MapProjectionApp {
 
             if (this.renderer.isRendering) {
                 event.preventDefault();
-                event.returnValue = '描画処理中です。ページを離れますか？';
+                event.returnValue = this.languageManager.t('messages.leaveWhileRendering');
             }
         });
     }
@@ -217,7 +224,7 @@ class MapProjectionApp {
             }
 
             if (startCameraBtn) {
-                startCameraBtn.textContent = 'カメラを再起動';
+                this.syncWebcamButtonLabel();
             }
 
             // カメラが複数ある場合は選択UIを表示
@@ -225,7 +232,7 @@ class MapProjectionApp {
                 cameraSelectGroup.style.display = 'block';
             }
 
-            this.uiControls.showMessage('カメラを起動しました', 'info');
+            this.uiControls.showMessage(this.languageManager.t('messages.cameraStarted'), 'info');
         } catch (error) {
             console.error('Failed to start webcam:', error);
         }
@@ -244,19 +251,31 @@ class MapProjectionApp {
         }
 
         if (startCameraBtn) {
-            startCameraBtn.textContent = 'カメラを起動';
+            this.syncWebcamButtonLabel();
         }
 
         if (cameraSelectGroup) {
             cameraSelectGroup.style.display = 'none';
         }
 
-        this.uiControls.showMessage('カメラを停止しました', 'info');
+        this.uiControls.showMessage(this.languageManager.t('messages.cameraStopped'), 'info');
     }
 
     captureFromWebcam() {
         this.inputHandler.captureFromWebcam();
-        this.uiControls.showMessage('写真を撮りました', 'info');
+        this.uiControls.showMessage(this.languageManager.t('messages.photoCaptured'), 'info');
+    }
+
+    syncWebcamButtonLabel() {
+        const startCameraBtn = document.getElementById('start-camera-btn');
+        if (!startCameraBtn) {
+            return;
+        }
+
+        const key = this.inputHandler.isWebcamActive()
+            ? 'inputSection.webcam.restartCamera'
+            : 'inputSection.webcam.startCamera';
+        startCameraBtn.textContent = this.languageManager.t(key);
     }
 
     setupSampleManager() {
@@ -265,7 +284,7 @@ class MapProjectionApp {
         });
 
         this.sampleManager.onError((error) => {
-            this.uiControls.showMessage('サンプル読み込みエラー: ' + error, 'error');
+            this.uiControls.showMessage(`${this.languageManager.t('messages.sampleLoadError')} ${error}`, 'error');
         });
 
         this.setupSampleUI();
@@ -304,6 +323,7 @@ class MapProjectionApp {
         const webcamArea = document.getElementById('webcam-area');
         const sampleSection = document.querySelector('.sample-section');
 
+        const previousType = this.inputHandler.currentInputType;
         this.inputHandler.setInputType(inputType);
 
         // すべてを非表示にしてから必要なものを表示
@@ -326,8 +346,7 @@ class MapProjectionApp {
             if (sampleSection) {
                 sampleSection.style.display = 'none';
             }
-            // カメラを停止（別の入力タイプから切り替えた場合）
-            if (this.inputHandler.isWebcamActive()) {
+            if (previousType !== 'webcam' && this.inputHandler.isWebcamActive()) {
                 this.stopWebcam();
             }
         } else {
@@ -377,7 +396,7 @@ class MapProjectionApp {
         try {
             await this.sampleManager.loadSample(type, filename);
         } catch (error) {
-            this.uiControls.showMessage('サンプル読み込みに失敗しました', 'error');
+            this.uiControls.showMessage(this.languageManager.t('messages.sampleLoadFailed'), 'error');
         }
     }
 
@@ -397,7 +416,7 @@ class MapProjectionApp {
             await this.renderer.render(data);
             
             this.uiControls.showMessage(
-                `${data.filename} を読み込みました`, 
+                `${data.filename} ${this.languageManager.t('messages.dataLoaded')}`,
                 'info'
             );
 
@@ -407,7 +426,7 @@ class MapProjectionApp {
             
         } catch (error) {
             console.error('Render error:', error);
-            this.uiControls.showMessage('描画に失敗しました: ' + error.message, 'error');
+            this.uiControls.showMessage(`${this.languageManager.t('messages.renderError')} ${error.message}`, 'error');
         }
     }
 
@@ -441,8 +460,7 @@ class MapProjectionApp {
                 <p><strong>${formatLabel}</strong> ${data.data.type}</p>
             `;
         } else if (data.type === 'image') {
-            const currentLang = this.languageManager.getCurrentLanguage();
-            const imageTypeLabel = currentLang === 'ja' ? '画像' : 'Image';
+            const imageTypeLabel = this.languageManager.t('infoSection.imageType');
 
             infoContent.innerHTML = `
                 <p><strong>${fileLabel}</strong> ${data.filename}</p>
@@ -473,7 +491,7 @@ class MapProjectionApp {
         if (!hasVisited) {
             setTimeout(() => {
                 this.uiControls.showMessage(
-                    'GeoJSONまたは顔写真をアップロードして地図投影法を体験してください！', 
+                    this.languageManager.t('messages.welcome'),
                     'info'
                 );
                 localStorage.setItem('mapProjectionApp_visited', 'true');
@@ -651,7 +669,7 @@ class MapProjectionApp {
 
     resetProjection() {
         this.uiControls.resetControls();
-        this.uiControls.showMessage('投影設定をリセットしました', 'info');
+        this.uiControls.showMessage(this.languageManager.t('messages.projectionReset'), 'info');
     }
 
     async exportCurrentView() {
@@ -690,7 +708,7 @@ class MapProjectionApp {
         this.currentDataType = null;
         this.updateFullscreenAvailability(null);
 
-        this.uiControls.showMessage('データをクリアしました', 'info');
+        this.uiControls.showMessage(this.languageManager.t('messages.dataCleared'), 'info');
     }
 
     handleWindowResize() {
@@ -727,7 +745,9 @@ class MapProjectionApp {
 
     showError(message) {
         console.error(message);
-        alert(message);
+        if (this.uiControls) {
+            this.uiControls.showMessage(message, 'error');
+        }
     }
 
     getAppInfo() {
@@ -760,10 +780,10 @@ class MapProjectionApp {
                 };
                 await this.handleDataLoaded(mockData);
             } else {
-                throw new Error('URL からの画像読み込みは未対応です');
+                throw new Error(this.languageManager.t('messages.urlImageUnsupported'));
             }
         } catch (error) {
-            this.uiControls.showMessage('URLからの読み込みに失敗しました: ' + error.message, 'error');
+            this.uiControls.showMessage(`${this.languageManager.t('messages.urlLoadFailed')} ${error.message}`, 'error');
         }
     }
 }
@@ -788,10 +808,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         
     } catch (error) {
         console.error('Failed to initialize app:', error);
-        alert('アプリケーションの初期化に失敗しました。ページを再読み込みしてください。');
+        let message = 'Failed to initialize the application. Please reload the page.';
+        try {
+            if (app && app.languageManager) {
+                message = app.languageManager.t('messages.initFailedReload');
+            }
+        } catch (translationError) {
+            // keep fallback
+        }
+        if (app && app.uiControls) {
+            app.uiControls.showMessage(message, 'error');
+        } else {
+            const fallback = document.createElement('div');
+            fallback.className = 'ui-message ui-message-error';
+            fallback.textContent = message;
+            fallback.style.cssText = 'position:fixed;top:80px;right:20px;background:#ff6b6b;color:#fff;padding:12px 20px;border-radius:5px;z-index:1000;';
+            document.body.appendChild(fallback);
+        }
     }
 });
-
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = MapProjectionApp;
-}
