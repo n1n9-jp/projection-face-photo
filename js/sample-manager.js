@@ -22,6 +22,11 @@ class SampleManager {
             ],
             images: [
                 {
+                    filename: 'world-map.jpg',
+                    path: 'samples/world-map.jpg',
+                    key: 'world'
+                },
+                {
                     filename: 'self.png',
                     path: 'samples/self.png',
                     key: 'self'

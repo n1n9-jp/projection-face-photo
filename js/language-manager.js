@@ -184,6 +184,10 @@ class LanguageManager {
                         }
                     },
                     images: {
+                        world: {
+                            name: '世界地図',
+                            description: 'NASA Blue Marble の正距円筒図法（Plate Carrée）画像。投影の歪み比較用。'
+                        },
                         self: {
                             name: '自撮り写真',
                             description: '画像はツール作者本人です。'
@@ -234,7 +238,8 @@ class LanguageManager {
                 },
                 footer: {
                     text: '地図投影法の歪みを可視化 - 顔写真やGeoJSONデータで投影法の特性を理解',
-                    credit: 'face.geojsonは<a href="https://gist.github.com/awoodruff/9216081#file-face-geojson" target="_blank" rel="noopener noreferrer">こちら</a>から取得しています。'
+                    credit: 'face.geojsonは<a href="https://gist.github.com/awoodruff/9216081#file-face-geojson" target="_blank" rel="noopener noreferrer">こちら</a>から取得しています。',
+                    creditWorld: '世界地図サンプルは NASA <a href="https://visibleearth.nasa.gov/images/57752/blue-marble-land-surface-shallow-water-and-shaded-topography" target="_blank" rel="noopener noreferrer">Visible Earth / Blue Marble</a> の正距円筒画像です。'
                 },
                 loading: {
                     converting: '変換中...'
@@ -425,6 +430,10 @@ class LanguageManager {
                         }
                     },
                     images: {
+                        world: {
+                            name: 'World Map',
+                            description: 'NASA Blue Marble in Plate Carrée (equirectangular), for comparing projection distortion.'
+                        },
                         self: {
                             name: 'Selfie',
                             description: "Sample image by the tool's creator."
@@ -475,7 +484,8 @@ class LanguageManager {
                 },
                 footer: {
                     text: 'Visualize map projection distortions - Understand projection characteristics with face photos and GeoJSON data',
-                    credit: 'face.geojson sourced from <a href="https://gist.github.com/awoodruff/9216081#file-face-geojson" target="_blank" rel="noopener noreferrer">this resource</a>.'
+                    credit: 'face.geojson sourced from <a href="https://gist.github.com/awoodruff/9216081#file-face-geojson" target="_blank" rel="noopener noreferrer">this resource</a>.',
+                    creditWorld: 'World map sample is a Plate Carrée image from NASA <a href="https://visibleearth.nasa.gov/images/57752/blue-marble-land-surface-shallow-water-and-shaded-topography" target="_blank" rel="noopener noreferrer">Visible Earth / Blue Marble</a>.'
                 },
                 loading: {
                     converting: 'Converting...'
