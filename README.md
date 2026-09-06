@@ -64,7 +64,8 @@ Vercel が静的ファイルを配信します。[`vercel.json`](vercel.json) �
     ├── face.geojson           # 顔の GeoJSON
     ├── tissot-circles.geojson # ティソーの指示楕円
     ├── self.png               # 画像サンプル
-    └── lena.png               # 画像サンプル
+    ├── lena.png               # 画像サンプル
+    └── world-map.jpg          # 正距円筒の世界地図（NASA Blue Marble）
 ```
 
 ## 対応投影法
@@ -98,6 +99,7 @@ Vercel が静的ファイルを配信します。[`vercel.json`](vercel.json) �
 - 画像の各ピクセルを緯度経度座標として扱う（正距円筒〈Plate Carrée〉を基準に正規化）
 - 地図投影法で画像データ自体を変形
 - リアルタイム投影変換（ImageData操作）
+- サンプル `samples/world-map.jpg` は NASA Blue Marble の正距円筒画像（2:1）
 
 > 補足: 現状は Plate Carrée を基準に任意の投影へ再投影しています。正射図法や心射図法を基準にした比較表示は未実装です。
 
