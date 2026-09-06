@@ -146,6 +146,16 @@ class ProjectionManager {
         return map;
     }
 
+    geoToImageCoordinates(longitude, latitude, width, height) {
+        const x = (longitude / 360 + 0.5) * width;
+        const y = (0.5 - latitude / 180) * height;
+
+        return [
+            Math.max(0, Math.min(width - 1, x)),
+            Math.max(0, Math.min(height - 1, y))
+        ];
+    }
+
     isProjectionSupported(name) {
         return name in this.projections;
     }
