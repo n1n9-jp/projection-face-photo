@@ -16,7 +16,8 @@ class LanguageManager {
                     tagline: '顔写真や地図データを投影し、歪みの違いを体験しましょう。',
                     links: {
                         projectionFace: '顔でわかる地図投影のゆがみ：Projection Face',
-                        tissot: 'ティソーの指示楕円（Tissot’s indicatrix）'
+                        tissot: 'ティソーの指示楕円（Tissot’s indicatrix）',
+                        equalEarth: 'Equal Earth（D3 / Observable）'
                     }
                 },
                 inputSection: {
@@ -101,8 +102,8 @@ class LanguageManager {
                         ]
                     },
                     equalEarth: {
-                        name: 'イコールアース図法',
-                        description: '面積を保持する擬円筒図法。視覚的に自然で現代的な世界地図に適用。',
+                        name: 'イコールアース図法（Equal Earth）',
+                        description: 'Šavrič らの正積擬円筒図法。面積を保ち、現代の世界地図に向く。',
                         properties: '正積図法（面積保持）',
                         characteristics: [
                             '面積が正確に保たれる',
@@ -256,7 +257,8 @@ class LanguageManager {
                     tagline: 'Explore projection distortions with face photos and GeoJSON data.',
                     links: {
                         projectionFace: 'Understanding Map Projection Distortions with Faces',
-                        tissot: "Tissot's Indicatrix"
+                        tissot: "Tissot's Indicatrix",
+                        equalEarth: 'Equal Earth | D3 | Observable'
                     }
                 },
                 inputSection: {
@@ -342,7 +344,7 @@ class LanguageManager {
                     },
                     equalEarth: {
                         name: 'Equal Earth',
-                        description: 'Equal-area pseudocylindrical projection. Visually natural for modern world maps.',
+                        description: 'Equal-area pseudocylindrical projection by Šavrič et al. Visually natural for modern world maps.',
                         properties: 'Equal-area (area-preserving)',
                         characteristics: [
                             'Areas are preserved accurately',

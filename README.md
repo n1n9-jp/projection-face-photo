@@ -74,7 +74,7 @@ Vercel が静的ファイルを配信します。[`vercel.json`](vercel.json) �
 - **ステレオ図法** (`d3.geoStereographic()`)
 
 ### 正積図法（面積保持）
-- **イコールアース図法** (`d3.geoEqualEarth()`)
+- **イコールアース図法（Equal Earth）** (`d3.geoEqualEarth()`)
 - **モルワイデ図法** (`d3.geoMollweide()`)
 
 ### 正距図法（距離保持）
@@ -147,6 +147,7 @@ Vercel が静的ファイルを配信します。[`vercel.json`](vercel.json) �
 
 ## 参考
 
+- [Equal Earth | D3 | Observable](https://observablehq.com/@d3/equal-earth) - `d3.geoEqualEarth()` の公式デモ
 - [Map Projection Transitions](https://observablehq.com/@d3/map-projection-transitions) - D3.js投影法デモ
 - [n1n9-jp/projection-face](https://github.com/n1n9-jp/projection-face) - 本プロジェクトの参考実装
 - [D3.js Geo Projections](https://github.com/d3/d3-geo-projection) - D3.js地図投影法ライブラリ

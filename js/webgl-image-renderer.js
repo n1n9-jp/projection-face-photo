@@ -189,24 +189,39 @@ class WebGLImageRenderer {
             }
 
             vec2 inverseEqualEarth(vec2 uv) {
-                vec2 scaledUV = applyScale(uv);
-                float x = (scaledUV.x - 0.5) * 2.0;
-                float y = (0.5 - scaledUV.y) * 1.0;
+                vec2 plane = toPlane(uv);
+                float x = plane.x;
+                float y = plane.y;
+                const float A1 = 1.340264;
+                const float A2 = -0.081106;
+                const float A3 = 0.000893;
+                const float A4 = 0.003796;
+                const float M = 0.8660254037844386;
+                const float EPS2 = 1e-12;
 
-                float A = 1.44708;
-                float B = 0.54201;
-                float C = 0.00652;
-
-                float phi = y;
-                for (int i = 0; i < 5; i++) {
-                    float cosPhi = cos(phi);
-                    float f = phi + C * phi * phi * phi - y / A;
-                    float fprime = 1.0 + 3.0 * C * phi * phi;
-                    phi = phi - f / fprime;
+                float l = y;
+                float l2 = l * l;
+                float l6 = l2 * l2 * l2;
+                for (int i = 0; i < 12; i++) {
+                    float fy = l * (A1 + A2 * l2 + l6 * (A3 + A4 * l2)) - y;
+                    float fpy = A1 + 3.0 * A2 * l2 + l6 * (7.0 * A3 + 9.0 * A4 * l2);
+                    float delta = fy / fpy;
+                    l -= delta;
+                    l2 = l * l;
+                    l6 = l2 * l2 * l2;
+                    if (abs(delta) < EPS2) {
+                        break;
+                    }
                 }
 
-                float lat = phi * 180.0 / PI;
-                float lon = x * PI / (2.0 * (A - B * cos(phi))) * 180.0 / PI;
+                float cosL = cos(l);
+                float sinOverM = sin(l) / M;
+                if (abs(cosL) < 1e-8 || abs(sinOverM) > 1.0 + 1e-4) {
+                    return vec2(1e9);
+                }
+
+                float lon = (M * x * (A1 + 3.0 * A2 * l2 + l6 * (7.0 * A3 + 9.0 * A4 * l2)) / cosL) * 180.0 / PI;
+                float lat = asinSafe(sinOverM) * 180.0 / PI;
                 return vec2(lon, lat);
             }
 
