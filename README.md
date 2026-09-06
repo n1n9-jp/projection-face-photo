@@ -24,6 +24,24 @@
 - **Vanilla JavaScript**: 軽量で高速な実装
 - **CSS3**: モダンなレスポンシブUI
 
+## 開発とデプロイ
+
+バンドラは使いません。`package.json` もビルドコマンドもありません。リポジトリルートの HTML / CSS / JS をそのまま配信します。
+
+### ローカル
+
+VS Code の Live Server（ポートは `.vscode/settings.json`）か、リポジトリルートで静的サーバを起動します。
+
+```bash
+python3 -m http.server 5501
+```
+
+ブラウザで `http://localhost:5501/` を開きます。`?lang=ja` または `?lang=en` で初期言語を指定できます。
+
+### デプロイ
+
+Vercel が静的ファイルを配信します。[`vercel.json`](vercel.json) はセキュリティヘッダと `samples/` のキャッシュ設定のみです。本番は [projection-face-photo.dataviz.jp](https://projection-face-photo.dataviz.jp/)。
+
 ## アーキテクチャ
 
 ```
