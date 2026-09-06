@@ -5,15 +5,14 @@ class InputHandler {
         this.currentData = null;
         this.supportedImageTypes = ['image/png', 'image/jpeg', 'image/jpg'];
         this.supportedGeoTypes = ['application/json', 'application/geo+json'];
-        this.isIOS = this.detectIOS();
-        this.maxImageDimension = this.isIOS ? 480 : 900;
+        this.maxImageDimension = ImageUtils.getMaxImageDimension();
+        this.filePreviewUrl = null;
         this.callbacks = {
             onDataLoaded: null,
             onError: null,
             onProgress: null
         };
 
-        // Webcam properties
         this.webcamStream = null;
         this.availableCameras = [];
     }
@@ -24,23 +23,11 @@ class InputHandler {
         this.setInputType(this.currentInputType);
     }
 
-    detectIOS() {
-        if (typeof navigator === 'undefined') return false;
-        return /iP(hone|od|ad)/.test(navigator.userAgent);
-    }
-
     setupEventListeners() {
         const fileInput = document.getElementById('file-input');
-        const inputTypeRadios = document.querySelectorAll('input[name="input-type"]');
 
         fileInput.addEventListener('change', (event) => {
             this.handleFileSelect(event.target.files[0]);
-        });
-
-        inputTypeRadios.forEach(radio => {
-            radio.addEventListener('change', (event) => {
-                this.setInputType(event.target.value);
-            });
         });
     }
 
@@ -59,7 +46,7 @@ class InputHandler {
         dropZone.addEventListener('drop', (event) => {
             event.preventDefault();
             dropZone.classList.remove('dragover');
-            
+
             const files = event.dataTransfer.files;
             if (files.length > 0) {
                 this.handleFileSelect(files[0]);
@@ -110,8 +97,8 @@ class InputHandler {
 
     validateFile(file) {
         if (this.currentInputType === 'geojson') {
-            return this.supportedGeoTypes.includes(file.type) || 
-                   file.name.endsWith('.geojson') || 
+            return this.supportedGeoTypes.includes(file.type) ||
+                   file.name.endsWith('.geojson') ||
                    file.name.endsWith('.json');
         } else {
             return this.supportedImageTypes.includes(file.type);
@@ -120,7 +107,7 @@ class InputHandler {
 
     loadGeoJSON(file) {
         const reader = new FileReader();
-        
+
         reader.onload = (event) => {
             try {
                 const data = JSON.parse(event.target.result);
@@ -153,13 +140,13 @@ class InputHandler {
 
     loadImage(file) {
         const reader = new FileReader();
-        
+
         reader.onload = async (event) => {
             const img = new Image();
-            
+
             img.onload = async () => {
                 try {
-                    const processedImage = await this.scaleImageIfNeeded(img);
+                    const processedImage = await ImageUtils.scaleImageIfNeeded(img, this.maxImageDimension);
                     this.currentData = {
                         type: 'image',
                         data: processedImage,
@@ -195,34 +182,6 @@ class InputHandler {
         reader.readAsDataURL(file);
     }
 
-    scaleImageIfNeeded(image) {
-        if (!image || !image.width || !image.height) {
-            return Promise.resolve(image);
-        }
-
-        const maxSide = Math.max(image.width, image.height);
-        if (maxSide <= this.maxImageDimension) {
-            return Promise.resolve(image);
-        }
-
-        const ratio = this.maxImageDimension / maxSide;
-        const targetWidth = Math.round(image.width * ratio);
-        const targetHeight = Math.round(image.height * ratio);
-
-        const canvas = document.createElement('canvas');
-        canvas.width = targetWidth;
-        canvas.height = targetHeight;
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
-
-        return new Promise((resolve, reject) => {
-            const resizedImage = new Image();
-            resizedImage.onload = () => resolve(resizedImage);
-            resizedImage.onerror = reject;
-            resizedImage.src = canvas.toDataURL('image/png');
-        });
-    }
-
     validateGeoJSON(data) {
         if (!data || typeof data !== 'object') {
             throw new Error(this.languageManager.t('messages.invalidJson'));
@@ -246,31 +205,71 @@ class InputHandler {
     }
 
     updateFileInfo(file) {
+        const extra = null;
+        this.renderFileInfo(file.name, file.type || 'unknown', extra);
+
+        if (this.currentInputType === 'image') {
+            this.revokeFilePreviewUrl();
+            const objectUrl = URL.createObjectURL(file);
+            this.filePreviewUrl = objectUrl;
+            const img = new Image();
+            img.onload = () => {
+                const fileType = document.getElementById('file-type');
+                if (fileType) {
+                    fileType.textContent += ` (${img.width}×${img.height}px)`;
+                }
+                this.revokeFilePreviewUrl();
+            };
+            img.onerror = () => {
+                this.revokeFilePreviewUrl();
+            };
+            img.src = objectUrl;
+        }
+    }
+
+    refreshFileInfoDisplay() {
+        if (!this.currentData) {
+            return;
+        }
+
+        const extra = this.currentData.width && this.currentData.height
+            ? `${this.currentData.width}×${this.currentData.height}px`
+            : null;
+        const typeValue = this.currentData.type === 'image'
+            ? this.languageManager.t('infoSection.imageType')
+            : 'GeoJSON';
+        this.renderFileInfo(this.currentData.filename, typeValue, extra);
+    }
+
+    renderFileInfo(name, type, extra) {
         const fileInfo = document.getElementById('file-info');
         const fileName = document.getElementById('file-name');
         const fileType = document.getElementById('file-type');
-
-        fileName.textContent = `ファイル名: ${file.name}`;
-        fileType.textContent = `タイプ: ${file.type || 'unknown'}`;
-        
-        if (this.currentInputType === 'image') {
-            const img = new Image();
-            img.onload = () => {
-                fileType.textContent += ` (${img.width}×${img.height}px)`;
-            };
-            img.src = URL.createObjectURL(file);
+        if (!fileInfo || !fileName || !fileType) {
+            return;
         }
 
+        fileName.textContent = `${this.languageManager.t('inputSection.fileInfo.name')} ${name}`;
+        fileType.textContent = extra
+            ? `${this.languageManager.t('inputSection.fileInfo.type')} ${type} (${extra})`
+            : `${this.languageManager.t('inputSection.fileInfo.type')} ${type}`;
         fileInfo.style.display = 'block';
+    }
+
+    revokeFilePreviewUrl() {
+        if (this.filePreviewUrl) {
+            URL.revokeObjectURL(this.filePreviewUrl);
+            this.filePreviewUrl = null;
+        }
     }
 
     showProgress(percentage) {
         const loading = document.getElementById('loading');
         const progress = document.getElementById('progress');
-        
+
         loading.style.display = 'block';
         progress.style.width = percentage + '%';
-        
+
         this.triggerCallback('onProgress', percentage);
     }
 
@@ -281,7 +280,6 @@ class InputHandler {
 
     showError(message) {
         this.hideProgress();
-        alert('エラー: ' + message);
         this.triggerCallback('onError', message);
     }
 
@@ -313,9 +311,10 @@ class InputHandler {
 
     clearData() {
         this.currentData = null;
+        this.revokeFilePreviewUrl();
         const fileInfo = document.getElementById('file-info');
         fileInfo.style.display = 'none';
-        
+
         const fileInput = document.getElementById('file-input');
         fileInput.value = '';
     }
@@ -353,18 +352,15 @@ class InputHandler {
         this.triggerCallback('onDataLoaded', this.currentData);
     }
 
-    // Webcam methods
     async enumerateCameras(requestPermission = false) {
         try {
             if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
                 throw new Error(this.languageManager.t('messages.cameraUnsupported'));
             }
 
-            // 許可を取得するために一度getUserMediaを呼ぶ
             if (requestPermission) {
                 try {
                     const tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-                    // すぐに停止
                     tempStream.getTracks().forEach(track => track.stop());
                 } catch (permError) {
                     console.warn('Permission denied:', permError);
@@ -392,6 +388,7 @@ class InputHandler {
         const select = document.getElementById('camera-select');
         if (!select) return;
 
+        const previousValue = select.value;
         select.innerHTML = `<option value="">${this.languageManager.t('messages.selectCamera')}</option>`;
 
         this.availableCameras.forEach((camera, index) => {
@@ -401,15 +398,15 @@ class InputHandler {
             select.appendChild(option);
         });
 
-        // 最初のカメラを自動選択
-        if (this.availableCameras.length > 0) {
+        if (previousValue && this.availableCameras.some(camera => camera.deviceId === previousValue)) {
+            select.value = previousValue;
+        } else if (this.availableCameras.length > 0) {
             select.value = this.availableCameras[0].deviceId;
         }
     }
 
     async initializeWebcam(deviceId = null) {
         try {
-            // 既存のストリームを停止
             if (this.webcamStream) {
                 this.stopWebcam();
             }
@@ -455,19 +452,16 @@ class InputHandler {
                 throw new Error(this.languageManager.t('messages.cameraNotStarted'));
             }
 
-            // Canvasを作成して現在のフレームをキャプチャ
             const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
 
             const ctx = canvas.getContext('2d');
 
-            // 鏡像を元に戻す（transform: scaleX(-1)の反転）
             ctx.translate(canvas.width, 0);
             ctx.scale(-1, 1);
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            // Canvasから画像を作成
             const img = new Image();
             img.onload = () => {
                 this.currentData = {
@@ -507,8 +501,4 @@ class InputHandler {
     isWebcamActive() {
         return this.webcamStream !== null;
     }
-}
-
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = InputHandler;
 }

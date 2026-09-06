@@ -24,21 +24,47 @@
 - **Vanilla JavaScript**: 軽量で高速な実装
 - **CSS3**: モダンなレスポンシブUI
 
+## 開発とデプロイ
+
+バンドラは使いません。`package.json` もビルドコマンドもありません。リポジトリルートの HTML / CSS / JS をそのまま配信します。
+
+### ローカル
+
+VS Code の Live Server（ポートは `.vscode/settings.json`）か、リポジトリルートで静的サーバを起動します。
+
+```bash
+python3 -m http.server 5501
+```
+
+ブラウザで `http://localhost:5501/` を開きます。`?lang=ja` または `?lang=en` で初期言語を指定できます。
+
+### デプロイ
+
+Vercel が静的ファイルを配信します。[`vercel.json`](vercel.json) はセキュリティヘッダと `samples/` のキャッシュ設定のみです。本番は [projection-face-photo.dataviz.jp](https://projection-face-photo.dataviz.jp/)。
+
 ## アーキテクチャ
 
 ```
-src/
-├── index.html          # メインHTML
+.
+├── index.html                 # メインHTML
 ├── js/
-│   ├── main.js         # アプリケーションエントリーポイント
-│   ├── projections.js  # 投影法定義・管理
-│   ├── input-handler.js # GeoJSON/PNG入力処理
-│   ├── renderer.js     # 描画エンジン
-│   └── ui-controls.js  # UI制御
+│   ├── image-utils.js         # 画像スケール / iOS 判定
+│   ├── language-manager.js    # 日英 UI 文言
+│   ├── projections.js         # 投影法定義・管理
+│   ├── input-handler.js       # GeoJSON / PNG / Webカム入力
+│   ├── webgl-image-renderer.js # 画像の WebGL 再投影
+│   ├── renderer.js            # SVG / Canvas 描画エンジン
+│   ├── ui-controls.js         # UI 制御
+│   ├── sample-manager.js      # サンプルデータ読込
+│   └── main.js                # アプリケーションエントリーポイント
 ├── css/
-│   └── style.css       # スタイル
-└── data/
-    └── sample.geojson  # サンプルGeoJSON
+│   └── style.css              # スタイル
+└── samples/
+    ├── countries.json         # 世界の国境 GeoJSON
+    ├── face.geojson           # 顔の GeoJSON
+    ├── tissot-circles.geojson # ティソーの指示楕円
+    ├── self.png               # 画像サンプル
+    └── lena.png               # 画像サンプル
 ```
 
 ## 対応投影法

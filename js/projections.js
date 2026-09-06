@@ -10,51 +10,35 @@ class ProjectionManager {
     initializeProjections() {
         return {
             mercator: {
-                name: 'メルカトル図法',
-                description: '角度を保持する円筒図法。航海用地図で広く使用。極地で大きな歪み。',
-                properties: '正角図法（角度保持）',
+                webglIndex: 0,
                 create: () => d3.geoMercator()
             },
             stereographic: {
-                name: 'ステレオ図法',
-                description: '角度を保持する方位図法。中心からの距離が大きくなると歪みが増加。',
-                properties: '正角図法（角度保持）',
+                webglIndex: 1,
                 create: () => d3.geoStereographic().clipAngle(90)
             },
             equalEarth: {
-                name: 'イコールアース図法',
-                description: '面積を保持する擬円筒図法。視覚的に自然で現代的な世界地図に適用。',
-                properties: '正積図法（面積保持）',
+                webglIndex: 2,
                 create: () => d3.geoEqualEarth()
             },
             mollweide: {
-                name: 'モルワイデ図法',
-                description: '面積を保持する楕円形の擬円筒図法。全球を楕円で表現。',
-                properties: '正積図法（面積保持）',
+                webglIndex: 3,
                 create: () => d3.geoMollweide()
             },
             azimuthalEquidistant: {
-                name: '正距方位図法',
-                description: '中心点からの距離と方位が正確。中心から離れると歪みが増加。',
-                properties: '正距図法（距離保持）',
+                webglIndex: 4,
                 create: () => d3.geoAzimuthalEquidistant()
             },
             orthographic: {
-                name: '正射図法',
-                description: '地球を宇宙から見た球体として表現。半球のみ表示。',
-                properties: '透視図法（立体的表現）',
+                webglIndex: 5,
                 create: () => d3.geoOrthographic()
             },
             gnomonic: {
-                name: '心射図法',
-                description: '地球の中心から投影面に投影。直線が大圏航路を表す。',
-                properties: '透視図法（航海用）',
+                webglIndex: 6,
                 create: () => d3.geoGnomonic().clipAngle(60)
             },
             naturalEarth1: {
-                name: 'ナチュラルアース図法',
-                description: '視覚的に美しく、歪みのバランスが良い擬円筒図法。',
-                properties: '妥協図法（バランス重視）',
+                webglIndex: 7,
                 create: () => d3.geoNaturalEarth1()
             }
         };
@@ -150,45 +134,26 @@ class ProjectionManager {
     getAvailableProjections() {
         return Object.keys(this.projections).map(key => ({
             key,
-            name: this.projections[key].name,
-            properties: this.projections[key].properties
+            webglIndex: this.projections[key].webglIndex
         }));
     }
 
-    imageToGeoCoordinates(x, y, width, height) {
-        const longitude = ((x / width) - 0.5) * 360;
-        const latitude = ((0.5 - y / height)) * 180;
-        
-        return [
-            Math.max(-180, Math.min(180, longitude)),
-            Math.max(-90, Math.min(90, latitude))
-        ];
+    getProjectionIndexMap() {
+        const map = new Map();
+        Object.keys(this.projections).forEach(key => {
+            map.set(key, this.projections[key].webglIndex);
+        });
+        return map;
     }
 
     geoToImageCoordinates(longitude, latitude, width, height) {
         const x = (longitude / 360 + 0.5) * width;
         const y = (0.5 - latitude / 180) * height;
-        
+
         return [
             Math.max(0, Math.min(width - 1, x)),
             Math.max(0, Math.min(height - 1, y))
         ];
-    }
-
-    createInverseProjection(projection, width, height) {
-        const configuredProjection = this.configureProjection(projection, width, height);
-        
-        return (screenX, screenY) => {
-            try {
-                const geoCoords = configuredProjection.invert([screenX, screenY]);
-                if (!geoCoords || !isFinite(geoCoords[0]) || !isFinite(geoCoords[1])) {
-                    return null;
-                }
-                return geoCoords;
-            } catch (error) {
-                return null;
-            }
-        };
     }
 
     isProjectionSupported(name) {
@@ -202,22 +167,8 @@ class ProjectionManager {
         return typeof configured.invert === 'function';
     }
 
-    getInvertSupportedProjections() {
-        return Object.keys(this.projections).filter(name => {
-            try {
-                return this.supportsInvert(name);
-            } catch (error) {
-                return false;
-            }
-        });
-    }
-
     validateCoordinates(longitude, latitude) {
-        return longitude >= -180 && longitude <= 180 && 
+        return longitude >= -180 && longitude <= 180 &&
                latitude >= -90 && latitude <= 90;
     }
-}
-
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = ProjectionManager;
 }

@@ -71,6 +71,7 @@ class LanguageManager {
                     noData: 'データが読み込まれていません',
                     fileName: 'ファイル:',
                     dataType: 'タイプ:',
+                    imageType: '画像',
                     featureCount: 'フィーチャー数:',
                     format: '形式:',
                     size: 'サイズ:',
@@ -221,7 +222,14 @@ class LanguageManager {
                     cameraInUse: 'カメラが他のアプリケーションで使用中です',
                     webglNotSupported: 'お使いの環境ではWebGLが利用できません。キャンバス描画に切り替えます。',
                     webglInitFailed: 'WebGLの初期化に失敗しました。キャンバス描画に切り替えます。',
-                    captureError: '画像のキャプチャに失敗しました'
+                    captureError: '画像のキャプチャに失敗しました',
+                    cameraError: 'カメラの初期化に失敗しました',
+                    cameraNotStarted: 'カメラが起動していません',
+                    initFailed: 'アプリケーションの初期化に失敗しました',
+                    initFailedReload: 'アプリケーションの初期化に失敗しました。ページを再読み込みしてください。',
+                    leaveWhileRendering: '描画処理中です。ページを離れますか？',
+                    urlLoadFailed: 'URLからの読み込みに失敗しました:',
+                    urlImageUnsupported: 'URL からの画像読み込みは未対応です'
                 },
                 footer: {
                     text: '地図投影法の歪みを可視化 - 顔写真やGeoJSONデータで投影法の特性を理解',
@@ -303,6 +311,7 @@ class LanguageManager {
                     noData: 'No data loaded',
                     fileName: 'File:',
                     dataType: 'Type:',
+                    imageType: 'Image',
                     featureCount: 'Features:',
                     format: 'Format:',
                     size: 'Size:',
@@ -453,7 +462,14 @@ class LanguageManager {
                     cameraInUse: 'Camera is in use by another application',
                     webglNotSupported: 'WebGL is not available in this environment. Falling back to canvas rendering.',
                     webglInitFailed: 'Failed to initialize WebGL. Falling back to canvas rendering.',
-                    captureError: 'Failed to capture image'
+                    captureError: 'Failed to capture image',
+                    cameraError: 'Failed to initialize camera',
+                    cameraNotStarted: 'Camera is not started',
+                    initFailed: 'Failed to initialize the application',
+                    initFailedReload: 'Failed to initialize the application. Please reload the page.',
+                    leaveWhileRendering: 'Rendering in progress. Leave this page?',
+                    urlLoadFailed: 'Failed to load from URL:',
+                    urlImageUnsupported: 'Loading images from a URL is not supported'
                 },
                 footer: {
                     text: 'Visualize map projection distortions - Understand projection characteristics with face photos and GeoJSON data',
@@ -510,6 +526,7 @@ class LanguageManager {
             // ignore storage failures
         }
 
+        this.applyDocumentLanguage(this.currentLanguage);
         this.updateURLLanguage(this.currentLanguage);
     }
 
@@ -520,6 +537,7 @@ class LanguageManager {
         }
 
         if (lang === this.currentLanguage) {
+            this.applyDocumentLanguage(lang);
             this.updateURLLanguage(lang);
             return true;
         }
@@ -531,10 +549,18 @@ class LanguageManager {
             // ignore storage failures
         }
 
+        this.applyDocumentLanguage(lang);
         this.updateURLLanguage(lang);
 
         this.triggerCallback('onLanguageChange', lang);
         return true;
+    }
+
+    applyDocumentLanguage(lang) {
+        if (typeof document === 'undefined' || !document.documentElement) {
+            return;
+        }
+        document.documentElement.lang = lang;
     }
 
     updateURLLanguage(lang) {
@@ -587,8 +613,4 @@ class LanguageManager {
             this.callbacks[name](data);
         }
     }
-}
-
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = LanguageManager;
 }

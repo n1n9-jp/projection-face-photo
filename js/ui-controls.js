@@ -174,10 +174,6 @@ class UIControls {
         }
     }
 
-    getProjectionCharacteristics(projectionName) {
-        return this.languageManager.t(`projections.${projectionName}.characteristics`) || [];
-    }
-
     handleProjectionChange(projectionName) {
         if (this.isUpdating) return;
         
@@ -301,6 +297,8 @@ class UIControls {
 
         const messageDiv = document.createElement('div');
         messageDiv.className = `ui-message ui-message-${type}`;
+        messageDiv.setAttribute('role', 'status');
+        messageDiv.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
         messageDiv.textContent = message;
         
         messageDiv.style.cssText = `
@@ -589,8 +587,4 @@ class UIControls {
         placeholder.innerHTML = this.languageManager.t('infoSection.noData');
         container.appendChild(placeholder);
     }
-}
-
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = UIControls;
 }

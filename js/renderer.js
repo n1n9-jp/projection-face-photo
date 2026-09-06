@@ -149,7 +149,7 @@ class Renderer {
             }
         } catch (error) {
             console.error('Rendering error:', error);
-            this.showError('描画中にエラーが発生しました: ' + error.message);
+            throw error;
         } finally {
             this.hideLoading();
             this.isRendering = false;
@@ -1080,12 +1080,6 @@ class Renderer {
         document.getElementById('progress').style.width = Math.min(100, Math.max(0, percentage)) + '%';
     }
 
-    showError(message) {
-        this.hideLoading();
-        console.error(message);
-        alert(message);
-    }
-
     setDimensions(width, height) {
         this.width = width;
         this.height = height;
@@ -1155,7 +1149,6 @@ class Renderer {
     drawProjectionNameOnCanvas() {
         const projectionKey = this.projectionManager.currentProjection;
 
-        // LanguageManagerから投影法名を取得（日本語）
         let projectionName = projectionKey;
         if (this.languageManager) {
             projectionName = this.languageManager.t(`projections.${projectionKey}.name`);
@@ -1301,8 +1294,4 @@ class Renderer {
             return Promise.resolve(this.canvas.toDataURL('image/png'));
         }
     }
-}
-
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = Renderer;
 }
